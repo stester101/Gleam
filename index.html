@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#07293c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gleam">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%2307293c'/%3E%3Crect x='38' y='34' width='104' height='104' rx='10' fill='none' stroke='%237fe3ff' stroke-width='7'/%3E%3Cpath d='M90 34v104M38 86h104' stroke='%237fe3ff' stroke-width='7'/%3E%3Cpath d='M52 118c14-10 28-16 40-34' stroke='%23fff' stroke-width='9' stroke-linecap='round' opacity='.85'/%3E%3C/svg%3E">
+<title>Gleam — Window Cleaning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#04141f;--deep:#07293c;--mid:#0e4b68;
+  --glass:rgba(255,255,255,.075);--glass-2:rgba(255,255,255,.12);--edge:rgba(255,255,255,.18);
+  --text:#eef7fb;--dim:rgba(238,247,251,.58);--faint:rgba(238,247,251,.36);
+  --aqua:#7fe3ff;--suds:#f5d67b;--clean:#5fe3b0;--dirt:#ff8f7a;
+  --r:20px;--pad:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;touch-action:manipulation}
+body{margin:0;background:var(--ink);color:var(--text);font-family:Inter,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.45;overflow:hidden}
+#app{position:relative;display:flex;flex-direction:column;width:100%;max-width:440px;min-width:0;height:100vh;height:100dvh;margin:0 auto;overflow:hidden;isolation:isolate;
+  background:radial-gradient(120% 80% at 10% 0%, #10597e 0%, transparent 55%),
+    radial-gradient(100% 70% at 100% 10%, #0d3f5c 0%, transparent 60%),
+    linear-gradient(180deg,#07293c 0%,#04141f 70%)}
+#app::before{content:'';position:absolute;inset:-30%;z-index:0;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(127,227,255,.20),transparent) 20% 25%/46% 46% no-repeat,
+    radial-gradient(closest-side,rgba(95,227,176,.13),transparent) 85% 60%/50% 50% no-repeat,
+    radial-gradient(closest-side,rgba(245,214,123,.10),transparent) 40% 95%/44% 44% no-repeat;
+  filter:blur(10px);animation:drift 34s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(-4%,3%,0) scale(1.08)}}
+
+.glass{position:relative;background:var(--glass);border:1px solid var(--edge);border-radius:var(--r);
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+  box-shadow:0 10px 34px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.22)}
+.glass::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.14),transparent 38%)}
+
+header{position:relative;z-index:3;flex:0 0 auto;padding:calc(env(safe-area-inset-top) + 14px) var(--pad) 10px}
+.brandrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:baseline;gap:9px}
+.brand h1{font-family:Archivo,Inter,sans-serif;font-weight:700;font-size:24px;letter-spacing:-.035em;margin:0;
+  background:linear-gradient(100deg,#fff,var(--aqua));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand small{font-size:10.5px;letter-spacing:.20em;text-transform:uppercase;color:var(--faint)}
+.hbtns{display:flex;gap:8px}
+.iconbtn{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--glass);
+  border:1px solid var(--edge);color:var(--text);backdrop-filter:blur(14px);cursor:pointer;font-size:16px}
+.pagetitle{margin:14px 0 2px;font-family:Archivo,sans-serif;font-size:27px;letter-spacing:-.03em;font-weight:700}
+.pagesub{color:var(--dim);font-size:13px;margin-bottom:12px}
+.saved{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+.saved b{color:var(--clean);font-weight:600}
+
+.rain{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;opacity:.5}
+.drop{position:absolute;top:-14px;width:2px;height:12px;border-radius:2px;
+  background:linear-gradient(180deg,transparent,rgba(200,240,255,.85));animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(190px);opacity:0}}
+
+main{position:relative;z-index:2;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:0 var(--pad) calc(96px + env(safe-area-inset-bottom) + 20px);scroll-behavior:smooth}
+.page{display:none;animation:wipein .45s cubic-bezier(.4,0,.2,1)}
+.page.on{display:block}
+@keyframes wipein{from{clip-path:inset(0 100% 0 0);opacity:.4}to{clip-path:inset(0 0 0 0);opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.stat{padding:11px 12px;border-radius:16px}
+.stat b{display:block;font-family:"JetBrains Mono",monospace;font-size:19px;font-weight:600;letter-spacing:-.02em}
+.stat span{font-size:10px;text-transform:uppercase;letter-spacing:.11em;color:var(--faint)}
+.stat.owed b{color:var(--suds)} .stat.late b{color:var(--dirt)}
+
+.card{position:relative;overflow:hidden;padding:14px;margin-bottom:10px;border-radius:18px}
+.card .row1{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.addr{font-weight:600;font-size:15.5px;letter-spacing:-.01em}
+.who{color:var(--dim);font-size:12.5px;margin-top:1px}
+.price{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:16px;white-space:nowrap}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:10.5px;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);color:var(--dim)}
+.chip.round{color:var(--aqua);border-color:rgba(127,227,255,.32)}
+.chip.debt{color:var(--suds);border-color:rgba(245,214,123,.3)}
+.chip.late{color:var(--dirt);border-color:rgba(255,143,122,.3)}
+.chip.rise{color:var(--clean);border-color:rgba(95,227,176,.3)}
+.chip.note{color:var(--text);border-color:rgba(255,255,255,.22)}
+.acts{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;padding:10px;border-radius:13px;border:1px solid var(--edge);background:var(--glass-2);color:var(--text);
+  font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:transform .12s,background .2s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(120deg,rgba(127,227,255,.30),rgba(95,227,176,.22));border-color:rgba(127,227,255,.45)}
+.btn.danger{background:rgba(255,143,122,.16);border-color:rgba(255,143,122,.4);color:#ffd9d1}
+.btn.warn{background:rgba(245,214,123,.16);border-color:rgba(245,214,123,.42);color:#ffedc2}
+.btn.paid{background:linear-gradient(120deg,rgba(95,227,176,.34),rgba(127,227,255,.18));border-color:rgba(95,227,176,.5)}
+.btn.ghost{flex:0 0 auto;padding:10px 14px;color:var(--dim)}
+.payask{margin-top:12px;animation:wipein .3s cubic-bezier(.4,0,.2,1)}
+.payask .q{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--aqua);margin-bottom:8px;text-align:center}
+.payask .acts{margin-top:8px}
+.btn:focus-visible,.iconbtn:focus-visible,.tab:focus-visible{outline:2px solid var(--aqua);outline-offset:2px}
+
+/* squeegee wipe — the signature */
+.grime{position:absolute;inset:0;pointer-events:none;border-radius:inherit;opacity:0;
+  background:radial-gradient(circle at 12% 30%,rgba(255,255,255,.30) 0 2px,transparent 3px),
+    radial-gradient(circle at 28% 70%,rgba(255,255,255,.22) 0 3px,transparent 4px),
+    radial-gradient(circle at 44% 22%,rgba(255,255,255,.26) 0 2px,transparent 3px),
+    radial-gradient(circle at 61% 62%,rgba(255,255,255,.20) 0 3px,transparent 4px),
+    radial-gradient(circle at 76% 34%,rgba(255,255,255,.28) 0 2px,transparent 3px),
+    radial-gradient(circle at 90% 74%,rgba(255,255,255,.22) 0 3px,transparent 4px),
+    linear-gradient(120deg,rgba(255,255,255,.05),transparent)}
+.blade{position:absolute;top:-10%;bottom:-10%;left:0;width:16px;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.9),rgba(127,227,255,.5),rgba(255,255,255,0));
+  filter:blur(.4px);box-shadow:0 0 26px rgba(127,227,255,.65)}
+.card.cleaning .grime{opacity:1;animation:wipeaway .72s cubic-bezier(.5,0,.2,1) forwards}
+.card.cleaning .blade{opacity:1;animation:swipe .72s cubic-bezier(.5,0,.2,1) forwards}
+.card.cleaning{animation:sparkle .72s ease forwards}
+@keyframes wipeaway{from{clip-path:inset(0 0 0 0)}to{clip-path:inset(0 0 0 100%)}}
+@keyframes swipe{from{transform:translateX(-16px)}to{transform:translateX(440px)}}
+@keyframes sparkle{60%{border-color:rgba(127,227,255,.7)}100%{transform:scale(.96);opacity:0;margin-bottom:-10px;padding:0;height:0}}
+
+/* spotlight + progress */
+.card.spot{border-color:rgba(127,227,255,.4);box-shadow:0 12px 40px rgba(0,0,0,.36), 0 0 0 1px rgba(127,227,255,.12), inset 0 1px 0 rgba(255,255,255,.24)}
+.card.spot .addr{font-size:18px}
+.eyebrow{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--aqua);margin-bottom:6px}
+.ringwrap{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:18px;margin-bottom:12px}
+.ringwrap .txt{flex:1}
+.ringwrap b{font-family:"JetBrains Mono",monospace;font-size:17px;display:block}
+.ringwrap span{font-size:11px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+.ring{width:52px;height:52px;flex:0 0 auto;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:5;stroke-linecap:round}
+.ring .bg{stroke:rgba(255,255,255,.12)}
+.ring .fg{stroke:var(--clean);transition:stroke-dashoffset .7s cubic-bezier(.2,.8,.2,1)}
+.ringpct{position:absolute;font-size:10px;font-family:"JetBrains Mono",monospace}
+
+.seg{display:flex;gap:4px;padding:4px;border-radius:14px;margin-bottom:14px;background:rgba(255,255,255,.06);border:1px solid var(--edge)}
+.seg button{flex:1;padding:8px;border:0;border-radius:11px;background:transparent;color:var(--dim);font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--glass-2);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.seg.scroll{overflow-x:auto}
+.seg.scroll button{flex:0 0 auto;padding:8px 12px}
+.list{border-radius:18px;overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer}
+.item:last-child{border-bottom:0}
+.item:active{background:rgba(255,255,255,.05)}
+.item .grow{flex:1;min-width:0}
+.item .grow b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .grow span{font-size:12px;color:var(--dim);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.num{font-family:"JetBrains Mono",monospace;font-size:14px;font-weight:600;text-align:right;white-space:nowrap}
+.num.owe{color:var(--suds)} .num.clear{color:var(--clean)} .num.bad{color:var(--dirt)}
+.sect{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:20px 0 8px;display:flex;justify-content:space-between;align-items:center}
+input,select,textarea{width:100%;padding:11px 12px;border-radius:13px;border:1px solid var(--edge);background:rgba(255,255,255,.07);
+  color:var(--text);font:inherit;font-size:14px;margin-bottom:10px}
+input::placeholder,textarea::placeholder{color:var(--faint)}
+select option{background:#07293c}
+label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.heat{height:7px;border-radius:7px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:6px}
+.heat i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,rgba(127,227,255,.85),rgba(95,227,176,.8))}
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar .lbl{width:96px;font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .track{flex:1;height:9px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar .fill{height:100%;border-radius:9px;background:linear-gradient(90deg,rgba(127,227,255,.85),rgba(95,227,176,.75));transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes grow{from{transform:scaleX(0)}}
+.bar .val{width:56px;text-align:right;font-family:"JetBrains Mono",monospace;font-size:12.5px}
+
+.tick{width:24px;height:24px;border-radius:8px;border:1px solid var(--edge);display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+.tick.on{background:linear-gradient(120deg,rgba(127,227,255,.5),rgba(95,227,176,.4));border-color:var(--aqua)}
+.sent{color:var(--clean);font-size:11.5px;font-family:"JetBrains Mono",monospace}
+.nonum{color:var(--dirt);font-size:11px}
+.preview{padding:13px;border-radius:16px;font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:14px;
+  background:rgba(127,227,255,.07);border:1px solid rgba(127,227,255,.2)}
+.preview b{color:var(--text);font-weight:500}
+.banner{padding:12px 14px;border-radius:16px;margin-bottom:12px;font-size:12.5px;color:var(--text);
+  background:rgba(245,214,123,.10);border:1px solid rgba(245,214,123,.28);display:flex;gap:10px;align-items:center}
+.banner button{margin-left:auto;background:none;border:0;color:var(--suds);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+
+nav{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:5;display:flex;padding:6px;border-radius:22px;
+  background:rgba(10,40,58,.55);border:1px solid var(--edge);backdrop-filter:blur(26px) saturate(160%);-webkit-backdrop-filter:blur(26px) saturate(160%);
+  box-shadow:0 14px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.2)}
+.tab{flex:1;border:0;background:transparent;color:var(--faint);font:inherit;font-size:9.5px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;padding:8px 2px 6px;border-radius:16px;cursor:pointer;display:grid;gap:3px;justify-items:center}
+.tab i{font-style:normal;font-size:17px;filter:grayscale(1) opacity(.65)}
+.tab.on{color:var(--text);background:rgba(255,255,255,.10)}
+.tab.on i{filter:none}
+.fab{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom) + 88px);z-index:6;width:54px;height:54px;border-radius:50%;
+  border:1px solid rgba(127,227,255,.5);cursor:pointer;background:linear-gradient(140deg,rgba(127,227,255,.45),rgba(95,227,176,.3));
+  backdrop-filter:blur(18px);color:#fff;font-size:26px;line-height:1;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+
+.scrim{position:absolute;inset:0;z-index:7;background:rgba(2,12,20,.55);backdrop-filter:blur(3px);display:none}
+.scrim.on{display:block}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:8;max-height:90%;overflow-y:auto;border-radius:26px 26px 0 0;
+  padding:46px 16px calc(env(safe-area-inset-bottom) + 20px);background:rgba(9,44,64,.86);border:1px solid var(--edge);border-bottom:0;
+  backdrop-filter:blur(30px) saturate(160%);transform:translateY(100%);transition:transform .32s cubic-bezier(.3,.9,.3,1)}
+.sheet.on{transform:translateY(0)}
+.handle{width:38px;height:4px;border-radius:4px;background:rgba(255,255,255,.28);margin:6px auto 14px}
+.sheet h3{font-family:Archivo,sans-serif;font-size:20px;margin:0 0 2px;letter-spacing:-.02em}
+.sheet .sub{color:var(--dim);font-size:12.5px;margin-bottom:14px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13.5px}
+.kv span{color:var(--dim)}
+.kv b{font-family:"JetBrains Mono",monospace;font-weight:600;text-align:right}
+.tl{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12.5px}
+.tl .d{font-family:"JetBrains Mono",monospace;color:var(--faint);flex:0 0 74px}
+.tl .b{flex:1}
+.tl .a{font-family:"JetBrains Mono",monospace}
+
+.toast{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:9;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  transition:.25s;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:15px;font-size:13px;max-width:92%;
+  background:rgba(9,44,64,.9);border:1px solid var(--edge);backdrop-filter:blur(20px);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{background:none;border:0;color:var(--aqua);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.empty{text-align:center;padding:44px 20px;color:var(--dim);font-size:13.5px}
+.empty div{font-size:34px;margin-bottom:10px;opacity:.5}
+.empty b{display:block;color:var(--text);font-weight:600;margin-bottom:4px}
+
+/* ---- v3 additions ---- */
+.titlerow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 14px}
+.titlerow .pagetitle{margin:0}
+.rainbtn{flex:0 0 auto;padding:9px 13px;border-radius:13px;border:1px solid rgba(127,227,255,.34);background:var(--glass);color:var(--text);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;backdrop-filter:blur(14px)}
+.progresshero{padding:15px 17px;border-radius:20px;margin-bottom:14px}
+.prog-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.prog-count{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.prog-count span{font-size:17px;color:var(--faint)}
+.prog-top small{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.11em;display:block;margin-top:6px}
+.prog-money{display:flex;gap:16px;text-align:right}
+.prog-money b{font-family:"JetBrains Mono",monospace;font-size:17px;display:block;line-height:1.1}
+.prog-money b.clean{color:var(--clean)} .prog-money b.suds{color:var(--suds)}
+.prog-money span{font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
+.prog-bar{height:9px;border-radius:9px;background:rgba(255,255,255,.10);overflow:hidden}
+.prog-bar i{display:block;height:100%;border-radius:9px;transition:width .6s cubic-bezier(.2,.8,.2,1);
+  background:linear-gradient(90deg,rgba(127,227,255,.9),rgba(95,227,176,.85))}
+.prog-rounds{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.earn{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-radius:20px;margin-bottom:14px}
+.earn .big{font-family:"JetBrains Mono",monospace;font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.earn small{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.11em;display:block;margin-top:6px}
+.earn .done{text-align:right;font-size:12.5px;color:var(--dim);line-height:1.5}
+.earn .done b{color:var(--clean);font-family:"JetBrains Mono",monospace;font-size:15px}
+.cardtools{display:flex;gap:5px;flex:0 0 auto;align-items:center}
+.cardtools button{width:29px;height:29px;border-radius:9px;border:1px solid var(--edge);background:var(--glass);color:var(--text);font-size:12px;cursor:pointer;display:grid;place-items:center;padding:0}
+.cardtools button:disabled{opacity:.28}
+.cal{padding:12px;border-radius:20px;margin-bottom:12px}
+.calhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.calhead b{font-family:Archivo,sans-serif;font-size:16px}
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-size:9px;color:var(--faint);padding-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.day{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12.5px;cursor:pointer;border:1px solid transparent;color:var(--dim)}
+.day.has{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:var(--text)}
+.day.today{border-color:var(--aqua);color:var(--aqua)}
+.day.sel{background:rgba(127,227,255,.24);border-color:var(--aqua);color:#fff}
+.day .n{font-size:8px;font-family:"JetBrains Mono",monospace;color:var(--aqua);margin-top:1px}
+.day.pale{opacity:.32}
+.selrow{display:flex;gap:8px;margin-bottom:12px;align-items:stretch}
+.selrow select,.selrow input{margin:0}
+.hedit{display:flex;gap:6px;flex:0 0 auto}
+.hedit button{width:27px;height:27px;border-radius:8px;border:1px solid var(--edge);background:var(--glass);color:var(--dim);font-size:11px;cursor:pointer;padding:0}
+.txttype{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px}
+.txttype button{flex:0 0 auto;padding:9px 14px;border-radius:13px;border:1px solid var(--edge);background:var(--glass);color:var(--dim);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.txttype button.on{background:var(--glass-2);color:var(--text);border-color:rgba(127,227,255,.42)}
+.sendbtn{flex:0 0 auto;padding:8px 13px;border-radius:11px;border:1px solid rgba(127,227,255,.42);background:linear-gradient(120deg,rgba(127,227,255,.3),rgba(95,227,176,.18));color:#fff;font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.sendbtn.done{background:rgba(95,227,176,.14);border-color:rgba(95,227,176,.4);color:var(--clean)}
+
+/* outdoor mode — same layout, brighter */
+body.outdoor{font-size:16.5px}
+body.outdoor #app{--text:#ffffff;--dim:rgba(255,255,255,.86);--faint:rgba(255,255,255,.72);
+  --glass:rgba(255,255,255,.17);--glass-2:rgba(255,255,255,.26);--edge:rgba(255,255,255,.45);
+  --aqua:#b7f0ff;--suds:#ffe28f;--clean:#8bffcd;--dirt:#ffb2a2;
+  background:linear-gradient(180deg,#062132 0%,#010a11 70%)}
+body.outdoor #app::before{opacity:.35}
+body.outdoor .rain{display:none}
+body.outdoor .btn{font-weight:600}
+
+/* ---- v4 additions ---- */
+input[type=date]{appearance:none;-webkit-appearance:none;width:100%;min-width:0}
+.two>*{min-width:0}
+select{min-width:0}
+.grabber{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;border-radius:4px;background:rgba(255,255,255,.28);z-index:2;pointer-events:none}
+/* search UX */
+.todaysearch{display:flex;gap:8px;align-items:stretch;margin-bottom:6px}
+.searchwrap{position:relative;flex:1;min-width:0}
+.searchwrap input{margin:0;padding-left:38px;padding-right:38px}
+.searchwrap .si{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--faint);pointer-events:none}
+.clearbtn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;
+  border:0;background:rgba(255,255,255,.16);color:var(--text);font-size:12px;cursor:pointer;display:grid;place-items:center;padding:0}
+.addbtn{flex:0 0 auto;padding:0 14px;border-radius:13px;border:1px solid rgba(127,227,255,.45);
+  background:linear-gradient(120deg,rgba(127,227,255,.30),rgba(95,227,176,.22));color:#fff;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.restag{flex:0 0 auto;align-self:center;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:var(--dim);cursor:pointer}
+.restag.round{color:var(--aqua);border-color:rgba(127,227,255,.32)}
+.restag.job{color:var(--clean);border-color:rgba(95,227,176,.36);font-weight:600}
+.suggest{margin:2px 0 14px}
+.suggest .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:0 0 8px 2px}
+.suggestrow{display:flex;flex-wrap:wrap;gap:7px}
+.suggestrow .chip{cursor:pointer}
+.sheetclose{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:11px;border:1px solid var(--edge);
+  background:var(--glass);color:var(--text);font-size:14px;display:grid;place-items:center;cursor:pointer;z-index:2}
+.citem{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;background:var(--glass-2);
+  border:1px solid var(--edge);margin-bottom:8px}
+.citem.spot{border-color:rgba(127,227,255,.4)}
+.citem .grow{flex:1;min-width:0;cursor:pointer}
+.citem .grow b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.citem .grow span{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tick{cursor:pointer}
+@supports (-webkit-touch-callout:none){ #app{height:-webkit-fill-available} }
+#app.wx-cloudy-day{filter:saturate(.92) brightness(.98)}
+#app.wx-cloudy-night,#app.wx-clear-night,#app.wx-rain-night,#app.wx-fog-night,#app.wx-snow-night,#app.wx-storm-night{filter:brightness(.8) saturate(.9)}
+#app.wx-rain-day .rain,#app.wx-rain-night .rain{opacity:.8}
+#app.wx-storm-day,#app.wx-storm-night{filter:brightness(.72) contrast(1.06)}
+#app.wx-fog-day,#app.wx-fog-night{filter:saturate(.55) brightness(.95)}
+#app.wx-snow-day{filter:brightness(1.05) saturate(.82)}
+@media (max-width:340px){ .stats{gap:6px} .stat{padding:9px 8px} .stat b{font-size:16px} }
+.ccard{display:flex;gap:10px;align-items:stretch;padding:13px 14px;border-radius:16px;margin-bottom:9px;cursor:pointer}
+.ccard-main{flex:1;min-width:0}
+.ccard-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.ccard-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ccard-name b{font-weight:600;font-size:15px}
+.ccard-head .num{flex:0 0 auto}
+.ccard-addr{color:var(--dim);font-size:12.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard .meta{margin-top:9px}
+.ccard-acts{display:flex;flex-direction:column;gap:6px;flex:0 0 auto;justify-content:center}
+.ccard-acts .iconbtn{width:34px;height:34px;font-size:14px;text-decoration:none}
+a.iconbtn{display:grid;place-items:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="rain" id="rain"></div>
+    <div class="brandrow">
+      <div class="brand"><h1>Gleam</h1><small id="bizname">Ant Hardman</small></div>
+      <div class="hbtns">
+        <button class="iconbtn" id="sunBtn" onclick="toggleOutdoor()" aria-label="Outdoor mode">☀</button>
+        <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page on" id="p-today"></section>
+    <section class="page" id="p-schedule"></section>
+    <section class="page" id="p-customers"></section>
+    <section class="page" id="p-money"></section>
+    <section class="page" id="p-texts"></section>
+  </main>
+
+  <button class="fab" onclick="quickAdd()" aria-label="Quick add customer">+</button>
+
+  <nav>
+    <button class="tab on" data-p="today"><i>🧽</i>Today</button>
+    <button class="tab" data-p="schedule"><i>🗓</i>Schedule</button>
+    <button class="tab" data-p="customers"><i>🏠</i>Customers</button>
+    <button class="tab" data-p="money"><i>💷</i>Money</button>
+    <button class="tab" data-p="texts"><i>💬</i>Texts</button>
+  </nav>
+
+  <div class="scrim" id="scrim" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet"></div>
+  <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAct"></button></div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   SEED DATA — from the Aworka export (Ben's rounds folded in)
+   [jobId, name, address, round, price, weeks, nextDue, owed, phone, balanceDate, priceSince]
+   dates are YYMMDD, 0 = none, weeks 0 = on request
+   ============================================================ */
+const RAW=[
+[2238593,"","56 Old Dover Road, Capel","Folkestone",20,4,260622,0,"",0,250331],
+[2238594,"","54 Old Dover Road","Folkestone",25,4,260622,0,"",0,250331],
+[2238595,"","Flemming Way","Folkestone",16,4,260622,16,"",260223,250331],
+[2238596,"Val","Flemming Way (front)","Folkestone",7,4,260622,21,"",251126,250331],
+[2238598,"","1 Chilhern Court","Folkestone",13,4,260622,0,"",0,250331],
+[2238600,"","3 Chilhern Court","Folkestone",13,4,260622,26,"",251219,250331],
+[2238609,"","Darnley Close","Folkestone",8,4,260622,0,"",0,250331],
+[2238611,"","Big house next to Irish lady — camper on drive","Folkestone",20,4,260622,100,"",250624,250331],
+[2238615,"","19 Weymouth","Folkestone",10,4,260622,80,"",250405,250821],
+[2264815,"","25 Weymouth","Folkestone",10,4,260622,20,"",251219,250519],
+[2264816,"","27 Weymouth","Folkestone",10,4,260622,70,"",250519,250519],
+[2264817,"","31 Weymouth","Folkestone",10,4,260622,70,"",250519,250519],
+[2447978,"","60 Old Dover Road","Folkestone",30,4,260622,0,"",0,260427],
+[1661784,"","24 Watkin Road","Folkestone",8,4,260622,84,"",241004,240409],
+[1690155,"","20 Watkin Road","Folkestone",8,4,260622,96,"",240806,240409],
+[2305969,"","21 Watkin Road","Folkestone",15,4,260622,60,"",250926,250812],
+[2238563,"","110 St Georges Road","Sandwich",16,4,260622,64,"",250617,250331],
+[2238565,"Jason","Near 2 Clay Court","Sandwich",35,4,260622,210,"",250617,250331],
+[963772,"Mrs Cliffe","1 Sunnyside Cottages, Marshborough","Sandwich",21,4,260622,245,"",240805,240513],
+[963774,"Mrs Rebecca Birchfield","Syndale Villa, Woodnesborough","Sandwich",17,4,260622,176,"",240617,240513],
+[963775,"Douglas Blunden","5 Park Terrace, Woodnesborough","Sandwich",19,4,260622,273,"",240212,240513],
+[963776,"Mrs","13 Burch Avenue, Sandwich","Sandwich",15,4,260622,32,"07877395238",251125,240513],
+[963766,"Mrs Denise","20 Sandown Lees, Sandwich","Sandwich",17,4,260622,152,"07837457559",240820,240419],
+[2366643,"","18 Burch Avenue","Sandwich",15,4,260622,15,"",251216,251125],
+[963797,"Mr Christopher Hulme","16 Gardners Close, Ash","Ash",24,4,260623,126,"07899904342",250618,240415],
+[963798,"","Meadow Cottage, Ash","Ash",26,4,260623,256,"",241111,240415],
+[2238558,"","17 Gardners Close","Ash",24,4,260623,120,"",250804,250331],
+[2238602,"","Beech Close (1 window)","Folkestone",5,4,260623,0,"",0,250331],
+[2238604,"","Quoins, Wiltern Road","Folkestone",25,4,260623,100,"",250929,250331],
+[2238605,"Anup Indians","Wilton Road","Folkestone",35,4,260623,106,"07949372582",250929,250331],
+[2238607,"","7 Meadowbrook","Folkestone",20,4,260623,150,"",250402,250331],
+[2238608,"","8 Meadowbrook","Folkestone",18,4,260623,126,"",250402,250331],
+[2238612,"","57 Military Road","Folkestone",10,4,260623,30,"",251127,250331],
+[2240931,"Jay","32a Beech Close","Folkestone",15,4,260623,65,"07855787489",250929,250406],
+[2242337,"","61 Royal Military Avenue","Folkestone",10,4,260623,10,"07742593766",251127,250405],
+[963788,"Mrs","6 The Hill, Littlebourne","Canterbury",12,4,260623,132,"",241002,211101],
+[963789,"Mr Webber","Cherrydale, Chillenden","Canterbury",26,4,260623,409,"07940842475",240410,240415],
+[1710454,"Graham Lane","Huntley Lodge, Chillenden","Canterbury",30,4,260623,385,"",240625,240415],
+[1725599,"","10 The Hill","Canterbury",12,4,260623,72,"",250318,220927],
+[1762297,"Hilary","4 The Hill","Canterbury",12,4,260623,180,"",240410,230105],
+[1762298,"Betty","8 The Hill","Canterbury",12,4,260623,36,"",251124,230317],
+[1783644,"","4 Cow Lane","Dover",8,4,260623,24,"",260107,240516],
+[1279422,"","5 Cow Lane","Dover",8,4,260623,98,"",240515,240516],
+[1279423,"","6 Cow Lane","Dover",8,4,260623,32,"",251202,240516],
+[1783647,"","7 Cow Lane","Dover",8,4,260623,68,"",250506,240516],
+[1844667,"","8 Cow Lane","Dover",8,4,260623,88,"",241009,240516],
+[1409357,"","5 Widred","Dover",7,4,260623,14,"",260311,240516],
+[1402945,"","9 Widred Road","Dover",7,4,260623,47,"",250320,240516],
+[989467,"Jan","9 Maison Dieu Place","Dover",7,4,260623,35,"",251014,211101],
+[1929719,"Frank","7 Widred Road","Dover",5,4,260623,22,"",251014,231012],
+[1929720,"Opposite Jan","Opposite Jan","Dover",10,4,260623,45,"",250702,250114],
+[965292,"","17 Little Mead","Folkestone",14,4,260623,14,"",260224,240409],
+[984038,"Debbie","Valebrook Close","Folkestone",18,4,260623,210,"",240806,240409],
+[1484925,"","15 Sugarloaf","Folkestone",25,4,260623,0,"",0,230725],
+[963791,"Cross","301 Canterbury Road, Folkstone","RDD",18,4,260623,201,"",241007,240516],
+[963800,"Mrs Sue Smith","Queensholme, Densole","RDD",20,4,260623,96,"07989277136",250818,240409],
+[963796,"Mrs Pudlow","1 Lady Garne Rd, West Hougham","West Hougham",10,4,260623,60,"01304204079",250818,240409],
+[2350852,"","6 Lady Garne Road","West Hougham",6,4,260623,0,"",0,251024],
+[963810,"Mr Tony Fisher","12 Charles Road","Deal",16,4,260624,172,"",241213,240426],
+[963856,"","8 Homefield Row, Deal","Deal",12,4,260624,0,"",0,140821],
+[963862,"Mr Mark Sleep","6 Leas Road, Deal","Deal",17,4,260624,866.5,"07813170634",191115,240513],
+[1073679,"Mr Birkett","16 Charles Road","Deal",16,4,260624,48,"",260114,240426],
+[1891315,"Emma Graves","18 Delane Road","Deal",17,4,260624,99,"",250917,240426],
+[2249220,"Robert","7 Homefield Row","Deal",15,4,260624,15,"07950690303",260527,250417],
+[2451349,"Dave","26 Old Park Road","Dover",18,8,260624,0,"",0,260428],
+[963784,"","Birch Tree Lodge, Eastry","Eastry",22,4,260624,66,"",251202,240416],
+[963785,"J Holland","Alpha, Eastry","Eastry",21,4,260624,261,"",240624,240416],
+[966391,"","Capeling House","Eastry",42,4,260624,375,"",241108,250626],
+[963805,"Mrs Walker","Palm Tree House, Eythorne","Eythorne",26,4,260624,178.5,"07768106009",250520,240513],
+[963807,"Mrs Yvonne Pearson","23 Green Lane, Eythorne","Eythorne",18,4,260624,192,"07786245576",241108,240513],
+[1542174,"Jane Maley","25 Green Lane","Eythorne",14,4,260624,14,"01304831148",260303,240513],
+[1542175,"Kate","39 Green Lane","Eythorne",14,4,260624,48,"",251125,240513],
+[1699421,"Bas","Flax Court Lane","Eythorne",16,4,260624,52,"07393416272",251125,250812],
+[965297,"","34 Cowper Road","River",20,4,260624,25,"07710520160",260429,240419],
+[1153334,"Mrs Sally Ely","3 Beresford Road","River",15,4,260624,120,"07941251718",250506,240419],
+[1985166,"Rob","1 Beresford Road","River",19,4,260624,38,"07596179100",260311,240130],
+[1769435,"Dan","27 The Ridgeway","River",19,4,260624,171,"07792291769",250321,240419],
+[1853338,"","48 Valley Road","River",22,4,260624,88,"",251204,240419],
+[2451350,"Mandy","47 Valley Road","River",30,4,260624,0,"",0,260429],
+[963876,"Mrs Truelove","4 Halliday Drive, Deal","Deal",22,4,260625,113,"",250922,250212],
+[1113141,"Sean Logan","43 Trafalgar Drive","Deal",20,4,260625,251,"07795211187",240606,240426],
+[1186648,"Tony","1 Downs Road","Deal",12,4,260625,176,"07970076667",240502,240513],
+[1210515,"Lisa","3 Downs Road","Deal",9,4,260625,133,"07887386864",240502,240513],
+[1280419,"Knight","7 Harvey Avenue","Deal",17.5,4,260625,183.5,"",250516,240426],
+[1595698,"Arnold","6 Halliday Drive","Deal",25,4,260625,200,"07802803403",250515,240131],
+[1759605,"Sue Turner","196 Downs Road","Deal",30,4,260625,370,"07809777460",240321,240513],
+[2124199,"Sarah","198 Downs Road","Deal",26,4,260625,294,"07760382371",240910,240911],
+[2097785,"Michael","41 Trafalgar Drive","Deal",20,4,260625,20,"07792704396",260528,240718],
+[2037687,"Graham","9 Penfold Gardens","Shepherdswell",15,8,260625,14,"07742226267",260430,250821],
+[1476045,"","11 Penfold Gardens","Shepherdswell",15,8,260625,0,"",0,250821],
+[2238569,"Irish John","35 Campbell Road","Deal",20,4,260626,20,"",260119,250331],
+[2238572,"Danny","Green house, Campbell Road","Deal",10,4,260626,50,"",250709,250331],
+[2238573,"Dave","Orange house, Campbell Road","Deal",5,4,260626,10,"",251210,250516],
+[2238574,"Paul","Gull Cottage (purple), Campbell Road","Deal",14,4,260626,56,"",250822,250331],
+[2238575,"Viv","39 Campbell Road","Deal",15,4,260626,30,"",251022,250331],
+[2238581,"","18 Downs Road, next door to Liz–Kurt","Deal",10,4,260626,20,"",260119,250331],
+[2238583,"Jan Hunchback Lady","1 Beech Close, Glack Road","Deal",16,4,260626,32,"",260119,250331],
+[2238592,"Macormac","Belmont","Deal",18,4,260626,72,"",250822,250331],
+[2262463,"","19 Campbell Road","Deal",5,4,260626,15,"",251022,250516],
+[2262703,"Mustache","Cheriton Road","Deal",15,4,260626,45,"",251022,250514],
+[963816,"MR Paul Last","Hawkshill Road","Deal",32,4,260626,306,"07731107298",241029,240513],
+[963823,"Mr David Harris","102 Wellington Parade, Deal","Deal",30,4,260626,352.5,"07816675722",240913,240913],
+[978455,"Tracy Horton","346 Dover Road","Deal",30,4,260626,120,"",251022,240709],
+[1316813,"Mrs Judith Hardy","2 Linwood Terrace","Deal",15,4,260626,75,"",250922,240513],
+[2089279,"Old Boy","85 St Martins Road","Deal",5,4,260626,5,"",260202,240715],
+[2118236,"","83 St Martins Road","Deal",5,4,260626,5,"",260202,240902],
+[2216701,"Nice bloke","77 St Martins Road","Deal",5,4,260626,0,"",0,250227],
+[2118235,"Lauren","95 St Martins Road","Deal",0,4,260626,0,"",0,240902],
+[2298841,"","3 Linwood Terrace","Deal",20,4,260626,0,"",0,250724],
+[963781,"Mrs Elizabeth Daw","Old Downs Farm, Sandwich Bay","Sandwich",45,8,260626,0,"",0,180723],
+[963760,"Mr Donaghy","Woodbine Cottage, Shepherdswell","Shepherdswell",27,4,260626,1201,"07887777488",190731,250327],
+[963763,"Mr James Burchell","15 Mill Lane, Shepherdswell","Shepherdswell",6,4,260626,0,"",0,170104],
+[963765,"Mr M Bernier","7 St Andrews Gardens","Shepherdswell",14,4,260626,150,"07703784793",240820,240419],
+[963767,"Mr","35 Sibberts Close","Shepherdswell",9,4,260626,126,"",240520,240419],
+[963768,"Mrs D Pentecost","13 Penfold Gardens","Shepherdswell",14,4,260626,218,"",240228,240419],
+[963769,"Mrs G Vaughan","49 Eythorne Road","Shepherdswell",20,4,260626,0,"07809512781",0,240419],
+[963770,"","36 Eythorne Road","Shepherdswell",20,4,260626,136,"",250502,240419],
+[1068049,"Dierdre","24 Penfold Gardens","Shepherdswell",15,4,260626,0,"07845118284",0,240520],
+[1489715,"","36 Siberts Close","Shepherdswell",18,4,260626,102,"",250819,240419],
+[2238555,"","Aspen Drive","Whitfield",20,4,260630,140,"",250718,250331],
+[1885638,"","64 Buckland Avenue","Dover",10,4,260630,90,"",250114,230721],
+[1270261,"Tom's mate","66 Buckland Avenue","Dover",10,4,260630,80,"",250320,200505],
+[1279420,"Pat Fearn","32 Guilford Avenue","Whitfield",20,4,260630,50,"",260402,240419],
+[1747273,"","2 Merlin Avenue","Whitfield",17,4,260630,85,"",251107,240416],
+[2143971,"Jordan","12 Redwing Grove","Whitfield",15,4,260630,165,"",250108,240917],
+[963838,"","Cowdray Square, Deal","Deal",0,4,260701,0,"",0,161124],
+[1049606,"Mary","37 Cowdray Square","Deal",10,4,260701,190,"",200930,190423],
+[1049608,"Sarah","41 Cowdray Square","Deal",12,4,260701,36,"",250823,190423],
+[2089278,"Noah","43 Cowdray Square","Deal",6,4,260701,0,"",0,240715],
+[1049609,"Badger","47 Cowdray Square","Deal",8,4,260701,0,"",0,190423],
+[1445656,"Leanne","24 Cowdray Square","Deal",12,4,260701,105,"",240306,240318],
+[2433682,"Jonathon Sleep","17 Lanfranc Road","Deal",12,5,260701,44,"",260401,260401],
+[2238579,"Debbie","Grey House, Thornbridge Road","Deal",16,4,260702,48,"",260120,250331],
+[963836,"Mrs Killip","31 Quern Road","Deal",15,8,260702,144,"01304363646",240604,241213],
+[963843,"Mrs Lewis","119 St Richards Road, Deal","Deal",7,4,260702,35,"07709985776",251205,240422],
+[963846,"","36 St Edmunds","Deal",10,4,260702,0,"01304365013",0,140422],
+[963848,"Mrs Wood","12A Mongeham Road, Deal","Deal",26,4,260702,378,"",240709,240422],
+[963861,"","1 Lodge Cottages, Deal","Deal",15,4,260702,40,"",260112,250916],
+[1719821,"","80 Liverpool Road","Deal",36,8,260702,551.5,"",230215,240423],
+[963852,"","18 Ethelbert Road, Deal","Deal",7.5,4,260706,45,"",250708,240423],
+[963864,"Mr Boyd","27 Poets Walk","Deal",14,4,260706,152,"",240715,240422],
+[963867,"","The Lodge, Deal","Deal",20,4,260706,0,"",0,240422],
+[963868,"Mrs Bowman","39 Station Road","Deal",9,4,260706,43,"",250911,240422],
+[963869,"","96 Station Road","Deal",8,4,260706,128,"",241015,211026],
+[1668810,"Raffi","37 Station Road","Deal",7,4,260706,125,"",240902,241213],
+[2238586,"Mrs Pett","Sydney Road","Deal",14,4,260707,14,"",260316,250331],
+[2238587,"","Sydney Road, opp Mrs Pett","Deal",20,4,260707,0,"",0,250331],
+[2238588,"","Sydney Road Station","Deal",25,4,260707,100,"",251021,250331],
+[2238590,"","Sydney Road + Salon","Deal",30,4,260707,80,"",250822,250331],
+[2238576,"","Corner of Downs Road / James Hall","Deal",30,4,260708,150,"",250821,250331],
+[2238578,"","90 Downs Road","Deal",10,4,260708,50,"",250821,250331],
+[2238580,"","20 Downs Road (Liz–Kurt)","Deal",10,4,260708,30,"",251210,250331],
+[2238585,"","Care Home, London Road","Deal",30,4,260708,210,"",250507,250331],
+[2261526,"","1 Court Road","Deal",20,4,260708,0,"",0,250512],
+[1188865,"Chris Niece","124 Forelands Square","Deal",14,4,260713,78,"",250917,211027],
+[963840,"","24 Forelands Square, Deal","Deal",15,8,260713,60,"",250917,211123],
+[1447001,"Kim","64 Manor Road","Deal",15,4,260713,183,"",240604,250916],
+[1515176,"","111 Forelands Square","Deal",16,4,260713,234,"",240426,240426],
+[2026172,"Mat","25 Forelands Square","Deal",14,4,260713,126,"",241213,240326],
+[963808,"Mr David Turner","Eildon House, St Margarets","St Margaret's Bay",12,8,260713,36,"",251013,240409],
+[963826,"Mr Allsopp","99 Telegraph Road","Deal",15,4,260715,0,"",0,240422],
+[963850,"Mr Robert Coe","Southern View, Mongeham","Deal",14.5,4,260715,140.5,"07710810470",241209,211027],
+[963851,"Mr Harding","Manor Cottage, Cherry Lane","Deal",12.5,4,260715,126.5,"01304369658",241015,211027],
+[963872,"","52 James Hall Gardens","Deal",15,4,260715,27,"",260114,240422],
+[963881,"Mr Nathan Myers","21 Wellesley Avenue, Deal","Deal",8,4,260715,174,"07984576386",240130,240422],
+[963839,"Mr Ross Wooding","137 St Richards Road, Deal","Deal",20,4,260716,145,"",240717,250708],
+[963844,"Mrs Myers","231 St Richards Road","Deal",12,4,260716,6,"01304363012",260319,211027],
+[963859,"Mrs Fulkes","21 Pavillion Close, Deal","Deal",18,4,260716,0,"",0,240423],
+[963817,"","1 Beach Mews, Kingsdown","Deal",30,4,260717,1588,"",190313,250916],
+[963818,"","2 Beach Mews, Kingsdown","Deal",25,4,260717,221,"",241029,250916],
+[963819,"","3 Beach Mews, Kingsdown","Deal",25,4,260717,244,"",240913,240513],
+[963820,"","4 Beach Mews, Kingsdown","Deal",25,4,260717,297,"",240720,240513],
+[963821,"Mr Simon Wakeham","5 Beach Mews, Kingsdown","Deal",26,8,260717,334,"",240202,240913],
+[969760,"","6 Beach Mews","Deal",25,4,260717,247,"",241029,240513],
+[1477187,"Gillian","7 Beach Mews","Deal",22,4,260717,218,"07881521453",241029,240913],
+[1283823,"Emma Watkinson","13 Storey Crescent","Hawkinge",12,8,260721,96,"",241007,211102],
+[989759,"Louise Hughes","13 Charles Road","Deal",16,8,260722,174,"",240426,240426],
+[1186645,"Edward","13 Robert Street","Deal",7.5,8,260722,58.5,"",250328,240423],
+[1412594,"","14 Charles Road","Deal",20,8,260722,417.5,"",210414,240426],
+[963877,"Mrs Smith","5 Halliday Drive, Deal","Deal",6,8,260723,72,"07780667601",240912,211101],
+[1188510,"Elaine","27 Trafalgar Drive","Deal",12,8,260723,115,"07941471732",240606,211129],
+[963841,"Miss Clair Gough","9 St Richards Road","Deal",18,8,260724,72,"",250922,240513],
+[969762,"Anika Roob","42 Rectory Road","Deal",22,8,260724,190,"07729437387",241209,230220],
+[1652745,"Vicki","5 Linwood Terrace","Deal",24,8,260724,160,"07500061132",240917,240513],
+[1655159,"Helen Bunch","Sea Breeze, Wellington Parade","Deal",30,8,260724,60,"",260213,220504],
+[2468848,"Carol Bryant","64 Wellington Parade","Deal",25,8,260724,0,"",0,260528],
+[1834053,"","Opposite Burch Avenue","Sandwich",20,8,260727,0,"",0,230710],
+[1834056,"","Opposite Burch","Sandwich",15,8,260727,0,"",0,240213],
+[1098317,"","60 Laburnum Avenue","Sandwich",18,8,260727,0,"",0,250626],
+[1323174,"Serena","33 Cowdray Square","Deal",15,8,260804,0,"",0,231126],
+[1323175,"","96 Cowdray Square","Deal",15,8,260804,6,"",260217,231126],
+[1781526,"","32 Stanbury Crescent","Folkestone",16,8,260810,78,"",250624,240409],
+[1137439,"","33 Weymouth Road","Folkestone",10,8,260811,40,"",251001,240123],
+[1306304,"","35 Weymouth Road","Folkestone",10,8,260811,20,"",251219,250821],
+[2447980,"","23 Weymouth","Folkestone",10,8,260812,0,"",0,260427],
+[963794,"Mrs Leanne Cole","The Chequers, Selsted","RDD",30,8,260812,25,"07881678461",260225,250821],
+[2291032,"Malcolm Powder","52 Blenheim Road","Deal",10,0,0,0,"",0,250709],
+[2124721,"Ness","1 Halstatt","Deal",15,0,0,15,"",240911,240911],
+[2293947,"Sue","22 Forelands Square","Deal",15,0,0,15,"",260319,250716]
+];
+const SEED_NOTES={2305969:"Front only",2238581:"Knock first",2238611:"Camper on drive — park past it",963838:"Price never set — needs quoting",2118235:"Price never set — needs quoting"};
+const CSV_HEAD="Customer Name,Customer Company,Customer Address,Customer Postcode,Customer Phone 1,Customer Phone 2,Customer Phone 3,Customer Email,Customer Email Cc,Customer Latitude,Customer Longitude,Customer Ref,Payment Method,Payment Frequency,Payment Next Due,GoCardless Mandate,GoCardless Status,Customer Notes,Starting Balance,Starting Balance Date,Balance,Balance Date,Credit Limit,User,Round,Day,Round Index,Seq Round Index,Reference,Job Contact Name,Job Company,Job Address,Job Postcode,Job Phone 1,Job Phone 2,Job Phone 3,Job Email,Job Email Cc,Job Latitude,Job Longitude,Task,Description,Notes,Price,Sales Tax,Allowed Days,Frequency,Time Required,Status,Appointments,Date Created,Start Date,Last Done/Skipped,Next Due,Sales Source,Sales Source Ref,Price Since,Aworka Job ID,Aworka Customer ID";
+
+/* ================= UTILITIES ================= */
+const D=864e5, $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function ymd(n){ if(!n) return ""; const s=String(n).padStart(6,"0"); return "20"+s.slice(0,2)+"-"+s.slice(2,4)+"-"+s.slice(4); }
+const dt=s=>new Date(s+"T00:00:00");
+function iso(d){ const z=new Date(d); z.setMinutes(z.getMinutes()-z.getTimezoneOffset()); return z.toISOString().slice(0,10); }
+const TODAY=()=>iso(new Date());
+const addD=(s,n)=>iso(new Date(dt(s).getTime()+n*D));
+const daysBetween=(a,b)=>Math.round((dt(b)-dt(a))/D);
+const uk=s=>s?s.slice(8,10)+"/"+s.slice(5,7)+"/"+s.slice(0,4):"—";
+const shortD=s=>s?dt(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}):"—";
+const fmt=n=>"£"+(Math.round((+n||0)*100)/100).toFixed(2).replace(/\.00$/,"");
+const monthsSince=s=>s?(Date.now()-dt(s).getTime())/(30.44*D):9999;
+const freqLabel=w=>w?w+" weekly":"On request";
+const nameOf=j=>j.name||j.addr.split(",")[0];
+const isActive=j=>j.status==="active";
+const overdue=j=>j.weeks>0 && j.next && dt(j.next)<dt(TODAY());
+
+/* ================= STORAGE ================= */
+const Store={
+  mode:"memory", db:null,
+  async init(){
+    try{
+      this.db=await new Promise((res,rej)=>{
+        const r=indexedDB.open("gleam",1);
+        r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+        r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+        setTimeout(()=>rej(new Error("timeout")),1500);
+      });
+      this.mode="IndexedDB"; return;
+    }catch(e){}
+    try{ localStorage.setItem("_g","1"); localStorage.removeItem("_g"); this.mode="localStorage"; return; }catch(e){}
+    this.mode="memory";
+  },
+  async get(){
+    try{
+      if(this.mode==="IndexedDB") return await new Promise((res,rej)=>{
+        const q=this.db.transaction("kv","readonly").objectStore("kv").get("state");
+        q.onsuccess=()=>res(q.result||null); q.onerror=()=>rej(q.error);
+      });
+      if(this.mode==="localStorage"){ const v=localStorage.getItem("gleam"); return v?JSON.parse(v):null; }
+    }catch(e){}
+    return null;
+  },
+  async set(v){
+    try{
+      if(this.mode==="IndexedDB") return await new Promise((res,rej)=>{
+        const q=this.db.transaction("kv","readwrite").objectStore("kv").put(v,"state");
+        q.onsuccess=()=>res(); q.onerror=()=>rej(q.error);
+      });
+      if(this.mode==="localStorage") localStorage.setItem("gleam",JSON.stringify(v));
+    }catch(e){ return false; }
+    return true;
+  }
+};
+
+/* ================= STATE ================= */
+let S=null, UNDO=null, saveTimer=null;
+const DEFAULTS={
+  settings:{
+    biz:"Gleam Window Cleaning", owner:"Ant Hardman",
+    payDetails:"Bank: 09-01-29 / 12345678 (A Hardman). Cash or card also fine.",
+    mins:30, freqs:[4,5,8,0], outdoor:false, weatherOn:true, compactToday:false,
+    tpl:{
+      onway:"Hi {name}, Ant here from {biz}. On my way to {address} now — should be with you shortly.",
+      done:"Hi {name}, windows done at {address} today. That's {price} please. {pay} Thanks!",
+      chase:"Hi {name}, Ant from {biz}. Your window cleaning balance stands at {balance}. Whenever you get a chance: {pay} Thanks!",
+      remind:"Hi {name}, Ant here from {biz}. I'm cleaning at {address} tomorrow, {date}. {price} due on the day. Reply STOP to skip this one."
+    }
+  },
+  meta:{lastExport:null,lastSaved:null,nudged:false}
+};
+
+/* ---- rounds registry ---- */
+function roundsSorted(){ return (S.rounds||[]).slice().sort((a,b)=>a.order-b.order); }
+function roundName(j){ const r=(S.rounds||[]).find(x=>x.id===j.roundId); return r?r.name:"Unassigned"; }
+function roundByName(name){ return (S.rounds||[]).find(r=>r.name===name); }
+function ensureRound(name){
+  name=(name||"Unassigned").trim()||"Unassigned";
+  let r=roundByName(name);
+  if(!r){
+    const n=S.rounds.length?Math.max(...S.rounds.map(x=>+String(x.id).replace(/\D/g,"")||0)):0;
+    r={id:"r"+(n+1),name,order:S.rounds.length+1};
+    S.rounds.push(r);
+  }
+  return r;
+}
+function rounds(){ return roundsSorted().map(r=>r.name); }
+function jobsInRound(id){ return S.jobs.filter(j=>j.roundId===id); }
+
+/* ---- ledger: balance is always derived, never a mutable stored truth ---- */
+const HLABEL={opening:"Opening balance",charge:"Clean charged",payment:"Payment",writeoff:"Written off",adjustment:"Adjustment",
+  legacy_payment:"Payment (legacy)",legacy_writeoff:"Written off (legacy)",legacy_price:"Price change (legacy)",
+  done:"Cleaned",skip:"Skipped"};
+function recalcBal(j){
+  let b=0;
+  (j.hist||[]).forEach(h=>{
+    if(h.t==="opening"||h.t==="charge"||h.t==="adjustment") b+=(+h.a||0);
+    else if(h.t==="payment"||h.t==="writeoff") b-=(+h.a||0);
+  });
+  j.bal=Math.round(b*100)/100;
+}
+function recalcAll(){ S.jobs.forEach(recalcBal); }
+function log(j,type,amt,note){ j.hist.push({id:"h"+Date.now()+Math.floor(Math.random()*1000),d:TODAY(),t:type,a:amt||0,n:note||""}); }
+
+/* BUG-01 + BUG-02 fix: advance from max(j.next, TODAY()), and always read/clear the keep-rhythm anchor */
+function advanceNext(j){
+  if(j.weeks<=0) return;
+  const basis=(j.next && dt(j.next)>dt(TODAY()))?j.next:TODAY();
+  if(j.anchor){
+    let n=addD(j.anchor,j.weeks*7);
+    while(dt(n)<=dt(TODAY())) n=addD(n,j.weeks*7);
+    j.next=n; j.anchor=null;
+  }else{
+    j.next=addD(basis,j.weeks*7);
+  }
+}
+
+function seed(){
+  const roundsReg=[]; const idFor={};
+  function ensureSeedRound(name){
+    if(idFor[name]) return idFor[name];
+    const r={id:"r"+(roundsReg.length+1),name,order:roundsReg.length+1};
+    roundsReg.push(r); idFor[name]=r.id; return r.id;
+  }
+  const jobs=RAW.map((r)=>{
+    const weeks=r[5];
+    const roundId=ensureSeedRound(r[3]);
+    const bal=r[7]||0;
+    const bd=ymd(r[9]);
+    const hist=bal?[{id:"h"+r[0],d:bd||TODAY(),t:"opening",a:bal,n:"Opening balance"}]:[];
+    const j={
+      id:"j"+r[0], jid:r[0], name:r[1], addr:r[2], pc:"", roundId, seq:0,
+      price:r[4], weeks:weeks, next:"", last:"",
+      bal:0, ph:r[8], ph2:"", email:"", bd:bd, ps:ymd(r[10]),
+      notes:SEED_NOTES[r[0]]||"", pay:"Cash", mins:30, status:"active", hist
+    };
+    recalcBal(j);
+    return j;
+  });
+  resequence(jobs);
+  return {jobs, rounds:roundsReg, dayOrders:{}, weather:null, settings:JSON.parse(JSON.stringify(DEFAULTS.settings)), meta:{...DEFAULTS.meta}};
+}
+/* (retained for reference — no longer called: Ant schedules jobs onto days himself) */
+function clearBacklog(jobs){
+  const today=TODAY();
+  jobs.forEach(j=>{
+    if(j.status!=="active"||j.weeks<=0||!j.next||dt(j.next)>dt(today)) return;
+    const origin=j.next;
+    if(j.price>0){ j.hist.push({id:"h"+Date.now()+Math.random(),d:origin,t:"charge",a:j.price,n:"Not paid (backlog)"}); }
+    j.hist.push({id:"h"+Date.now()+Math.random(),d:origin,t:"done",a:j.price,n:"Not paid"});
+    recalcBal(j); if(j.bal>0) j.bd=origin;
+    j.last=origin;
+    let n=origin, guard=0;
+    while(dt(n)<=dt(today)&&guard++<200) n=addD(n,j.weeks*7);
+    j.next=n;
+  });
+}
+function resequence(jobs){
+  const by={};
+  jobs.forEach(j=>{ by[j.roundId]=by[j.roundId]||0; j.seq=++by[j.roundId]; });
+}
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    S.meta.lastSaved=new Date().toISOString();
+    const ok=await Store.set(S);
+    savedLine(ok);
+  },350);
+}
+function savedLine(ok){
+  const el=$("savedLine"); if(!el) return;
+  if(Store.mode==="memory"){ el.innerHTML="Preview — <b style='color:var(--suds)'>download the file to keep your data</b>"; return; }
+  const t=S.meta.lastSaved?new Date(S.meta.lastSaved).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";
+  el.innerHTML=t?"<b>Saved "+t+"</b> · everything's on this phone":"<b>Saved on this phone</b>";
+}
+function snap(){ UNDO={jobs:JSON.stringify(S.jobs), order:UI.todayOrder?[...UI.todayOrder]:null}; }
+function undo(){ if(!UNDO) return; S.jobs=JSON.parse(UNDO.jobs); if(UNDO.order) UI.todayOrder=UNDO.order; UNDO=null; save(); render(); toast("Undone"); }
+
+/* migrate an old-shape save (jobs.round string, flat bal, old hist types) into the new ledger + rounds-registry shape */
+function migrateState(v){
+  if(!v.settings) v.settings=JSON.parse(JSON.stringify(DEFAULTS.settings));
+  if(!v.meta) v.meta={...DEFAULTS.meta};
+  if(v.rounds && v.jobs.length && v.jobs[0].roundId!==undefined){
+    v.jobs.forEach(j=>{ if(!j.hist) j.hist=[]; recalcBal(j); });
+    if(!v.dayOrders) v.dayOrders={};
+    return v;
+  }
+  v.rounds=v.rounds||[];
+  const roundIdFor={};
+  const ensure=name=>{
+    name=(name||"Unassigned").trim()||"Unassigned";
+    if(roundIdFor[name]) return roundIdFor[name];
+    let existing=v.rounds.find(r=>r.name===name);
+    if(!existing){ existing={id:"r"+(v.rounds.length+1),name,order:v.rounds.length+1}; v.rounds.push(existing); }
+    roundIdFor[name]=existing.id; return existing.id;
+  };
+  v.jobs.forEach(j=>{
+    j.roundId=ensure(j.round||"Unassigned");
+    delete j.round;
+    const oldBal=+j.bal||0;
+    const oldHist=(j.hist||[]).map(h=>{
+      if(h.t==="pay") return {...h,t:"legacy_payment"};
+      if(h.t==="writeoff") return {...h,t:"legacy_writeoff"};
+      if(h.t==="price") return {...h,t:"legacy_price"};
+      return h;
+    });
+    j.hist=oldBal?[{id:"h"+Date.now()+Math.random(),d:j.bd||TODAY(),t:"opening",a:oldBal,n:"Opening balance (migrated)"},...oldHist]:oldHist;
+    recalcBal(j);
+    j.bd=j.bal>0?(j.bd||TODAY()):"";
+  });
+  v.dayOrders=v.dayOrders||{};
+  return v;
+}
+
+/* ================= DERIVED ================= */
+const activeJobs=()=>S.jobs.filter(isActive);
+const dueToday=()=>activeJobs().filter(j=>j.weeks>0&&j.next&&dt(j.next)<=dt(TODAY()))
+  .sort((a,b)=> (a.next<b.next?-1:a.next>b.next?1:0) || roundName(a).localeCompare(roundName(b)) || a.seq-b.seq);
+const doneToday=()=>S.jobs.filter(j=>j.hist.some(h=>h.d===TODAY()&&h.t==="done"));
+const totalOwed=()=>activeJobs().reduce((s,j)=>s+Math.max(0,j.bal),0);
+const totalCredit=()=>activeJobs().reduce((s,j)=>s+Math.max(0,-j.bal),0);
+const isStale=j=>j.bal>0 && j.bd && monthsSince(j.bd)>12;
+
+/* projection for schedule view — first visit is max(next, today) */
+function projection(days){
+  const start=TODAY(), end=addD(start,days-1), map={};
+  activeJobs().filter(j=>j.weeks>0&&j.next).forEach(j=>{
+    let d=dt(j.next)<dt(start)?start:j.next, guard=0;
+    while(dt(d)<=dt(end)&&guard++<60){
+      (map[d]=map[d]||[]).push(j);
+      d=addD(d,j.weeks*7);
+    }
+  });
+  Object.values(map).forEach(a=>a.sort((x,y)=>roundName(x).localeCompare(roundName(y))||x.seq-y.seq));
+  return map;
+}
+
+/* ================= RENDER ================= */
+let UI={sched:"plan", window:28, custQ:"", custFilter:"all", custRound:"all", custSort:"round",
+  moneyTab:"owed", moneySort:"owed-desc", moneyRound:"all", moneyQ:"",
+  txType:"remind", txDate:"", txRound:"all", txHasNumber:"all",
+  selDay:null, todayAll:false, todayOrder:null, todayQ:"", calMonth:null, calYear:null, calSel:null};
+function render(){ recalcAll(); pgToday(); pgSchedule(); pgCustomers(); pgMoney(); pgTexts(); }
+
+/* ---- TODAY ---- */
+function orderedToday(){
+  const list=dueToday();
+  if(!UI.todayOrder){ UI.todayOrder=list.map(j=>j.id); return list; }
+  const byId={}; list.forEach(j=>byId[j.id]=j);
+  const kept=UI.todayOrder.filter(id=>byId[id]);
+  list.forEach(j=>{ if(!kept.includes(j.id)) kept.push(j.id); });
+  UI.todayOrder=kept;
+  return kept.map(id=>byId[id]);
+}
+function toggleCompact(){ S.settings.compactToday=!S.settings.compactToday; save(); pgToday(); }
+function pgToday(){
+  const list=orderedToday(), done=doneToday();
+  const total=list.length+done.length;
+  const roundValue=list.reduce((s,j)=>s+j.price,0)+done.reduce((s,j)=>s+j.price,0);
+  const collected=done.reduce((s,j)=>s+j.hist.filter(h=>h.d===TODAY()&&h.t==="payment").reduce((a,b)=>a+b.a,0),0);
+  const remaining=list.reduce((s,j)=>s+j.price,0);
+  const roundsToday=[...new Set([...list,...done].map(roundName))];
+  const pct=total?Math.round(done.length/total*100):0;
+  const compact=!!S.settings.compactToday;
+  const spot=list[0], rest=list.slice(1);
+  const cap=UI.todayAll?rest.length:24;
+  const shown=rest.slice(0,cap), hidden=rest.length-shown.length;
+  $("p-today").innerHTML=`
+    <div class="titlerow">
+      <div class="pagetitle">${shortD(TODAY())}</div>
+      <div style="display:flex;gap:8px">
+        <button class="rainbtn" onclick="toggleCompact()">${compact?"▤ Full":"☰ Compact"}</button>
+        ${list.length?`<button class="rainbtn" onclick="rainDay()">☔ Rain</button>`:""}
+      </div>
+    </div>
+    <div class="todaysearch">
+      <div class="searchwrap">
+        <span class="si">🔍</span>
+        <input id="todaySearch" placeholder="Find a customer or round to put on a day" value="${esc(UI.todayQ)}" oninput="UI.todayQ=this.value;renderTodaySearch();toggleClear('todayClear',this.value)">
+        <button class="clearbtn" id="todayClear" style="display:${UI.todayQ?"grid":"none"}" onclick="UI.todayQ='';pgToday();setTimeout(()=>$('todaySearch')&&$('todaySearch').focus(),0)" aria-label="Clear">✕</button>
+      </div>
+      <button class="addbtn" onclick="quickAdd()" aria-label="Add customer">＋ New</button>
+    </div>
+    <div id="todayResults">${todaySearchHTML()}</div>
+    <div id="todayRun" style="${UI.todayQ.trim()?"display:none":""}">
+    ${todaySuggestHTML()}
+    ${total?`<div class="progresshero glass">
+      <div class="prog-top">
+        <div><div class="prog-count">${done.length}<span>/${total}</span></div><small>${pct===100?"all done — nice one":"jobs cleaned"}</small></div>
+        <div class="prog-money"><div><b class="clean">${fmt(collected)}</b><span>collected</span></div><div><b class="suds">${fmt(remaining)}</b><span>left to earn</span></div></div>
+      </div>
+      <div class="prog-bar"><i style="width:${pct}%"></i></div>
+      ${roundsToday.length?`<div class="prog-rounds">${roundsToday.map(r=>`<span class="chip round">${esc(r)}</span>`).join("")}</div>`:""}
+    </div>`:""}
+    ${compact
+      ? (spot?compactRow(spot,true,0,list.length):"")+shown.map((j,i)=>compactRow(j,false,i+1,list.length)).join("")
+      : (spot?jobCard(spot,true,0,list.length):"")+shown.map((j,i)=>jobCard(j,false,i+1,list.length)).join("")}
+    ${hidden>0?`<button class="btn" style="width:100%;margin:2px 0 10px" onclick="UI.todayAll=true;pgToday()">Show ${hidden} more</button>`:""}
+    ${UI.todayAll&&list.length>25?`<button class="btn ghost" style="width:100%;margin:2px 0 10px" onclick="UI.todayAll=false;pgToday();$('main').scrollTop=0">Collapse</button>`:""}
+    ${!list.length?`<div class="empty"><div>✨</div><b>No jobs on today</b>Search above to add a job to today, or use ＋ New for a fresh customer.</div>`:""}
+    ${done.length?`<div class="sect"><span>Cleaned today</span><span>${fmt(done.reduce((s,j)=>s+j.price,0))}</span></div>
+      <div class="list glass">${done.map(j=>`<div class="item" onclick="jobSheet('${j.id}')">
+        <div class="grow"><b>${esc(j.addr)}</b><span>Next due ${uk(j.next)}</span></div>
+        <div class="num clear">${fmt(j.price)}</div></div>`).join("")}</div>
+      <div class="acts" style="margin-top:12px"><button class="btn" onclick="endOfDay()">End-of-day summary</button></div>`:""}
+    </div>`;
+}
+/* help before they search: quick jump chips for rounds with unscheduled work */
+function todaySuggestHTML(){
+  const rs=roundsSorted().map(r=>({r,unsched:jobsInRound(r.id).filter(j=>isActive(j)&&j.weeks>0&&!j.next).length}))
+    .filter(x=>x.unsched>0).sort((a,b)=>b.unsched-a.unsched).slice(0,8);
+  const totalUn=S.jobs.filter(j=>isActive(j)&&j.weeks>0&&!j.next).length;
+  if(!rs.length) return "";
+  return `<div class="suggest">
+    <div class="lbl">${totalUn} job${totalUn===1?"":"s"} still need a day · jump to a round</div>
+    <div class="suggestrow">
+      ${rs.map(x=>`<span class="chip round" onclick="roundSheet('${x.r.id}')">${esc(x.r.name)} · ${x.unsched}</span>`).join("")}
+    </div>
+  </div>`;
+}
+/* mixed round + job search from the Today screen — rounds first, then their jobs */
+function todaySearchHTML(){
+  const q=UI.todayQ.toLowerCase().trim();
+  if(!q) return "";
+  const roundHits=roundsSorted().filter(r=>r.name.toLowerCase().includes(q));
+  const jobHits=S.jobs.filter(isActive).filter(j=>(nameOf(j)+" "+j.addr+" "+roundName(j)).toLowerCase().includes(q))
+    .sort((a,b)=>roundName(a).localeCompare(roundName(b))||a.seq-b.seq).slice(0,60);
+  if(!roundHits.length && !jobHits.length)
+    return `<div class="empty" style="padding:26px 20px"><div>🔍</div><b>No match</b>Try a name, street or round.</div>`;
+  return `<div class="list glass" style="margin-bottom:14px">
+    ${roundHits.map(r=>`<div class="item" onclick="roundSheet('${r.id}')">
+      <div class="grow"><b>${esc(r.name)}</b><span>${jobsInRound(r.id).filter(isActive).length} jobs</span></div>
+      <span class="restag round">Round</span></div>`).join("")}
+    ${jobHits.map(j=>`<div class="item">
+      <div class="grow" onclick="jobSheet('${j.id}')"><b>${esc(nameOf(j))}</b><span>${esc(roundName(j))} · ${esc(j.addr)}${j.next?" · "+uk(j.next):" · unscheduled"}</span></div>
+      <button class="restag job" onclick="scheduleSheet('${j.id}')" aria-label="Add to a day">＋ Day</button></div>`).join("")}
+  </div>`;
+}
+function renderTodaySearch(){
+  const el=$("todayResults"); if(el) el.innerHTML=todaySearchHTML();
+  const run=$("todayRun"); if(run) run.style.display=UI.todayQ.trim()?"none":"";
+}
+function toggleClear(id,val){ const b=$(id); if(b) b.style.display=val?"grid":"none"; }
+/* pick a day for a job (used from Today search + job detail); keeps its 4-weekly rhythm going forward */
+function scheduleSheet(id){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  sheet(`<h3>Schedule ${esc(nameOf(j))}</h3><div class="sub">${esc(j.addr)} · ${esc(roundName(j))} · ${freqLabel(j.weeks)}</div>
+    <label>Put on this day</label><input id="schDate" type="date" value="${TODAY()}">
+    <div class="preview">It'll recur every ${j.weeks||4} weeks from this date. Change the frequency in Edit if needed.</div>
+    <div class="acts">
+      <button class="btn primary" onclick="doSchedule('${id}',true)">Add to today</button>
+      <button class="btn" onclick="doSchedule('${id}',false)">Use chosen date</button>
+    </div>`);
+}
+function doSchedule(id,useToday){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  const target=useToday?TODAY():($("schDate").value||TODAY());
+  snap();
+  if(!j.weeks) j.weeks=4;
+  j.next=target; j.anchor=null;
+  UI.todayQ=""; UI.todayOrder=null;
+  closeSheet(); save(); render(); go('today');
+  toast(nameOf(j)+" scheduled for "+uk(target),"Undo",undo);
+}
+function jobCard(j,spotlight,i,total){
+  return `<div class="card glass${spotlight?" spot":""}" id="c${j.id}">
+    <div class="grime"></div><div class="blade"></div>
+    ${spotlight?`<div class="eyebrow">Next job</div>`:""}
+    <div class="row1">
+      <div><div class="addr">${esc(j.addr)}</div>${j.name?`<div class="who">${esc(j.name)}</div>`:""}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="price">${j.price?fmt(j.price):"No price"}</div>
+        <div class="cardtools">
+          <button ${i===0?"disabled":""} onclick="moveToday('${j.id}',-1)" aria-label="Up">↑</button>
+          <button ${i>=total-1?"disabled":""} onclick="moveToday('${j.id}',1)" aria-label="Down">↓</button>
+          <button onclick="moveSheet('job','${j.id}')" aria-label="Move to date">⤓</button>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <span class="chip round">${esc(roundName(j))} · ${j.seq}</span>
+      <span class="chip">${freqLabel(j.weeks)}</span>
+      ${overdue(j)?`<span class="chip late">Due ${uk(j.next)}</span>`:""}
+      ${j.bal>0?`<span class="chip debt">Owes ${fmt(j.bal)}</span>`:""}
+      ${j.bal<0?`<span class="chip rise">${fmt(-j.bal)} in credit</span>`:""}
+      ${j.notes?`<span class="chip note">${esc(j.notes)}</span>`:""}
+    </div>
+    <div class="acts" id="a${j.id}">
+      <button class="btn primary" onclick="askPay('${j.id}')">Mark done</button>
+      <button class="btn ghost" onclick="skipSheet('${j.id}')">Skip</button>
+      ${spotlight?`<button class="btn ghost" onclick="navTo('${j.id}')" aria-label="Navigate">🧭</button>`:`<button class="btn ghost" onclick="jobSheet('${j.id}')">Details</button>`}
+    </div>
+  </div>`;
+}
+function compactRow(j,spotlight,i,total){
+  return `<div class="citem${spotlight?" spot":""}" id="c${j.id}">
+    <div class="grow" onclick="jobSheet('${j.id}')"><b>${esc(j.addr)}</b><span>${esc(roundName(j))} · ${j.price?fmt(j.price):"no price"}${overdue(j)?" · overdue":""}</span></div>
+    <div class="acts" id="a${j.id}" style="margin:0;flex:0 0 auto">
+      <button class="btn primary" style="padding:7px 10px;font-size:12px" onclick="askPay('${j.id}')">Done</button>
+      <button class="btn ghost" style="padding:7px 10px;font-size:12px" onclick="skipSheet('${j.id}')">Skip</button>
+    </div>
+  </div>`;
+}
+function askPay(id){
+  const j=S.jobs.find(x=>x.id===id), acts=$("a"+id); if(!acts) return;
+  acts.outerHTML=`<div class="payask" id="a${id}">
+    <div class="q">${j.price?"Did they pay "+fmt(j.price)+"?":"Mark as done"}</div>
+    <div class="acts">
+      <button class="btn paid" onclick="finishDone('${id}','full')">${j.price?"Paid in full":"Done"}</button>
+      ${j.price?`<button class="btn warn" onclick="finishDone('${id}','none')">Not paid</button>`:""}
+    </div>
+    <div class="acts">
+      ${j.price?`<button class="btn ghost" style="flex:1" onclick="partPay('${id}')">Part payment</button>`:""}
+      <button class="btn ghost" style="flex:1" onclick="cancelPay('${id}')">Cancel</button>
+    </div>
+  </div>`;
+}
+function cancelPay(id){
+  const el=$("a"+id); if(!el) return;
+  el.outerHTML=`<div class="acts" id="a${id}">
+    <button class="btn primary" onclick="askPay('${id}')">Mark done</button>
+    <button class="btn ghost" onclick="skipSheet('${id}')">Skip</button>
+    <button class="btn ghost" onclick="jobSheet('${id}')">Details</button>
+  </div>`;
+}
+function moveToday(id,dir){
+  orderedToday();
+  const arr=UI.todayOrder, i=arr.indexOf(id), k=i+dir;
+  if(i<0||k<0||k>=arr.length) return;
+  [arr[i],arr[k]]=[arr[k],arr[i]];
+  pgToday();
+}
+
+/* ---- SCHEDULE ---- */
+function pgSchedule(){
+  $("p-schedule").innerHTML=`
+    <div class="pagetitle">Schedule</div>
+    <div class="seg" style="margin-top:12px">
+      <button class="${UI.sched==="plan"?"on":""}" onclick="UI.sched='plan';pgSchedule()">Plan</button>
+      <button class="${UI.sched==="calendar"?"on":""}" onclick="UI.sched='calendar';pgSchedule()">Calendar</button>
+      <button class="${UI.sched==="rounds"?"on":""}" onclick="UI.sched='rounds';pgSchedule()">Rounds</button>
+    </div>
+    ${UI.sched==="plan"?planView():UI.sched==="calendar"?calendarView():roundsView()}`;
+}
+function planView(){
+  const map=projection(UI.window);
+  const days=Object.keys(map).sort();
+  const grand=days.reduce((s,d)=>s+map[d].reduce((a,j)=>a+j.price,0),0);
+  const jobs=days.reduce((s,d)=>s+map[d].length,0);
+  const maxJobs=Math.max(1,...days.map(d=>map[d].length));
+  return `<div class="seg scroll">
+      ${[[7,"1 week"],[14,"2 weeks"],[28,"4 weeks"],[56,"8 weeks"]].map(([d,l])=>
+        `<button class="${UI.window===d?"on":""}" onclick="UI.window=${d};pgSchedule()">${l}</button>`).join("")}
+    </div>
+    <div class="stats">
+      <div class="stat glass"><b>${jobs}</b><span>Jobs</span></div>
+      <div class="stat glass owed"><b>${fmt(grand)}</b><span>Projected</span></div>
+      <div class="stat glass"><b>${days.length}</b><span>Working days</span></div>
+    </div>
+    ${days.length?`<div class="list glass">${days.map(d=>{
+      const js=map[d], v=js.reduce((s,j)=>s+j.price,0);
+      const rs=[...new Set(js.map(j=>roundName(j)))];
+      return `<div class="item" onclick="daySheet('${d}')">
+        <div class="grow"><b>${shortD(d)}${d===TODAY()?" · today":""}</b>
+          <span>${fmt(v)} · ${rs.slice(0,3).join(", ")}${rs.length>3?" +"+(rs.length-3):""}</span>
+          <div class="heat"><i style="width:${Math.max(8,js.length/maxJobs*100)}%"></i></div></div>
+        <div class="num" style="text-align:right"><b style="font-size:17px">${js.length}</b><br><span style="font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em">jobs</span></div></div>`;
+    }).join("")}</div>`
+    :`<div class="empty"><div>🗓</div><b>Nothing scheduled</b>Give a job a frequency and a next-due date to see it here.</div>`}`;
+}
+function calendarView(){
+  const now=new Date();
+  if(UI.calMonth===null){ UI.calMonth=now.getMonth(); UI.calYear=now.getFullYear(); }
+  const y=UI.calYear, m=UI.calMonth;
+  const first=new Date(y,m,1), startDow=(first.getDay()+6)%7, dim=new Date(y,m+1,0).getDate();
+  const map=projection(90); const byDay={};
+  Object.keys(map).forEach(d=>{ byDay[d]=map[d]; });
+  const cells=[];
+  for(let i=0;i<startDow;i++) cells.push(`<div></div>`);
+  for(let dd=1;dd<=dim;dd++){
+    const key=`${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+    const n=(byDay[key]||[]).length, isT=key===TODAY(), sel=key===UI.calSel;
+    cells.push(`<div class="day ${n?"has":"pale"} ${isT?"today":""} ${sel?"sel":""}" onclick="UI.calSel='${key}';pgSchedule()">
+      ${dd}${n?`<span class="n">${n}</span>`:""}</div>`);
+  }
+  const selJs=UI.calSel?(byDay[UI.calSel]||[]):[];
+  const monthName=first.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+  return `<div class="cal glass">
+      <div class="calhead">
+        <button class="iconbtn" onclick="shiftMonth(-1)">‹</button>
+        <b>${monthName}</b>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="rainbtn" style="padding:6px 10px;font-size:11px" onclick="jumpToday()">Today</button>
+          <button class="iconbtn" onclick="shiftMonth(1)">›</button>
+        </div>
+      </div>
+      <div class="grid7">${["M","T","W","T","F","S","S"].map(x=>`<div class="dow">${x}</div>`).join("")}${cells.join("")}</div>
+    </div>
+    ${UI.calSel?`<div class="sect"><span>${shortD(UI.calSel)}</span><span>${selJs.length} jobs · ${fmt(selJs.reduce((s,j)=>s+j.price,0))}</span></div>
+      ${selJs.length?`<div class="list glass">${selJs.map(j=>`<div class="item" onclick="jobSheet('${j.id}')">
+        <div class="grow"><b>${esc(j.addr)}</b><span>${esc(roundName(j))} · ${freqLabel(j.weeks)}</span></div>
+        <div class="num">${fmt(j.price)}</div></div>`).join("")}</div>
+        <button class="btn" style="width:100%;margin-top:10px" onclick="daySheet('${UI.calSel}')">Open this day</button>`
+      :`<div class="empty"><div>📅</div><b>Nothing that day</b>Pick a highlighted date to see the run.</div>`}`
+    :`<div class="preview">Tap a highlighted day to see what's on. Numbers show how many jobs fall on each date.</div>`}`;
+}
+function shiftMonth(n){
+  let m=UI.calMonth+n, y=UI.calYear;
+  if(m<0){ m=11; y--; } if(m>11){ m=0; y++; }
+  UI.calMonth=m; UI.calYear=y; pgSchedule();
+}
+function jumpToday(){ const n=new Date(); UI.calMonth=n.getMonth(); UI.calYear=n.getFullYear(); UI.calSel=TODAY(); pgSchedule(); }
+function roundsView(){
+  const rs=roundsSorted().map(r=>{
+    const js=jobsInRound(r.id).filter(isActive);
+    return {id:r.id,name:r.name,n:js.length,val:js.reduce((s,j)=>s+j.price,0),mins:js.reduce((s,j)=>s+j.mins,0),
+      next:js.filter(j=>j.next).map(j=>j.next).sort()[0]};
+  });
+  const maxN=Math.max(1,...rs.map(x=>x.n));
+  return `<button class="btn primary" style="width:100%;margin-bottom:12px" onclick="addRoundSheet()">＋ Add round</button>
+    ${!rs.length?`<div class="empty"><div>📍</div><b>No rounds yet</b>Add a round to get started.</div>`:
+    `<div class="list glass">${rs.map(x=>`<div class="item" onclick="roundSheet('${x.id}')">
+      <div class="grow"><b>${esc(x.name)}</b><span>${fmt(x.val)} per visit · ${Math.round(x.mins/60*10)/10} hrs · next ${uk(x.next)}</span></div>
+      <div class="num" style="text-align:right"><b style="font-size:17px">${x.n}</b><br><span style="font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em">jobs</span></div></div>`).join("")}</div>
+    <div class="sect">Jobs per round</div>
+    ${rs.map(x=>`<div class="bar"><div class="lbl">${esc(x.name)}</div>
+      <div class="track"><div class="fill" style="width:${x.n/maxN*100}%"></div></div>
+      <div class="val">${x.n}</div></div>`).join("")}`}`;
+}
+function addRoundSheet(){
+  sheet(`<h3>Add round</h3><label>Round name</label><input id="newRoundName" placeholder="e.g. Sandwich" autofocus>
+    <button class="btn primary" style="width:100%" onclick="doAddRound()">Create round</button>`);
+}
+function doAddRound(){
+  const name=($("newRoundName").value||"").trim();
+  if(!name){ toast("Enter a name"); return; }
+  if(roundByName(name)){ toast("That round already exists"); return; }
+  snap(); ensureRound(name); closeSheet(); save(); render(); toast(name+" added","Undo",undo);
+}
+
+/* ---- CUSTOMERS ---- */
+function custMatches(){
+  const q=UI.custQ.toLowerCase().trim();
+  let js=S.jobs.filter(j=>!q||(j.name+" "+j.addr+" "+roundName(j)+" "+j.ph).toLowerCase().includes(q));
+  const F=UI.custFilter;
+  if(F==="all") js=js.filter(isActive);
+  if(F==="overdue") js=js.filter(j=>isActive(j)&&overdue(j));
+  if(F==="owing") js=js.filter(j=>isActive(j)&&j.bal>0);
+  if(F==="credit") js=js.filter(j=>isActive(j)&&j.bal<0);
+  if(F==="nophone") js=js.filter(j=>isActive(j)&&!j.ph);
+  if(F==="off") js=js.filter(j=>!isActive(j));
+  if(UI.custRound!=="all") js=js.filter(j=>j.roundId===UI.custRound);
+  const sort=UI.custSort;
+  js.sort((a,b)=>{
+    if(sort==="name") return nameOf(a).localeCompare(nameOf(b));
+    if(sort==="balance") return b.bal-a.bal;
+    if(sort==="next") return (a.next||"9999").localeCompare(b.next||"9999");
+    if(sort==="overdue") return (overdue(b)?1:0)-(overdue(a)?1:0) || (a.next||"9999").localeCompare(b.next||"9999");
+    return roundName(a).localeCompare(roundName(b))||a.seq-b.seq||a.addr.localeCompare(b.addr);
+  });
+  return js;
+}
+function custListHTML(){
+  const js=custMatches();
+  if(!js.length) return `<div class="empty"><div>🔍</div><b>No match</b>Try a street name, or clear the filter.</div>`;
+  return js.slice(0,300).map(j=>{
+    const od=overdue(j);
+    return `<div class="ccard glass" onclick="jobSheet('${j.id}')">
+      <div class="ccard-main">
+        <div class="ccard-head">
+          <div class="ccard-name"><b>${esc(nameOf(j))}</b>${!isActive(j)?`<span class="chip note" style="margin-left:6px">${j.status}</span>`:""}</div>
+          <div class="num ${j.bal>0?"owe":j.bal<0?"clear":"clear"}">${j.bal>0?fmt(j.bal):j.bal<0?fmt(-j.bal)+" cr":"clear"}</div>
+        </div>
+        <div class="ccard-addr">${esc(j.addr)}</div>
+        <div class="meta">
+          <span class="chip round">${esc(roundName(j))} · ${j.seq}</span>
+          <span class="chip">${freqLabel(j.weeks)}</span>
+          ${j.weeks>0?(j.next?`<span class="chip ${od?"late":""}">${od?"Overdue ":"Due "}${uk(j.next)}</span>`:`<span class="chip">Unscheduled</span>`):""}
+          ${!j.ph?`<span class="chip late">No number</span>`:""}
+          ${j.notes?`<span class="chip note">${esc(j.notes.length>28?j.notes.slice(0,28)+"…":j.notes)}</span>`:""}
+        </div>
+      </div>
+      <div class="ccard-acts" onclick="event.stopPropagation()">
+        ${j.ph?`<a class="iconbtn" href="tel:${esc(j.ph.replace(/\s/g,''))}" aria-label="Call">📞</a>`:""}
+        <button class="iconbtn" onclick="navTo('${j.id}')" aria-label="Navigate">🧭</button>
+        ${j.bal>0?`<button class="iconbtn" onclick="paySheet('${j.id}')" aria-label="Payment">£</button>`:""}
+      </div>
+    </div>`;
+  }).join("");
+}
+function renderCustResults(){ const el=$("custResults"); if(el) el.innerHTML=custListHTML(); }
+function pgCustomers(){
+  const F=UI.custFilter;
+  $("p-customers").innerHTML=`
+    <div class="pagetitle" style="margin-top:8px">Customers</div>
+    <div class="pagesub">${activeJobs().length} active · ${S.jobs.filter(j=>!isActive(j)).length} paused or archived</div>
+    <div class="searchwrap" style="margin-bottom:10px">
+      <span class="si">🔍</span>
+      <input id="custSearch" placeholder="Try a name, street, round or number" value="${esc(UI.custQ)}" oninput="UI.custQ=this.value;renderCustResults();toggleClear('custClear',this.value)">
+      <button class="clearbtn" id="custClear" style="display:${UI.custQ?"grid":"none"}" onclick="UI.custQ='';pgCustomers();setTimeout(()=>$('custSearch')&&$('custSearch').focus(),0)" aria-label="Clear">✕</button>
+    </div>
+    <div class="selrow">
+      <select onchange="UI.custRound=this.value;renderCustResults()">
+        <option value="all" ${UI.custRound==="all"?"selected":""}>All rounds</option>
+        ${roundsSorted().map(r=>`<option value="${r.id}" ${UI.custRound===r.id?"selected":""}>${esc(r.name)}</option>`).join("")}
+      </select>
+      <select onchange="UI.custSort=this.value;renderCustResults()">
+        ${[["round","By round"],["name","Name A–Z"],["balance","Balance high→low"],["next","Next due"],["overdue","Overdue first"]]
+          .map(([k,l])=>`<option value="${k}" ${UI.custSort===k?"selected":""}>${l}</option>`).join("")}
+      </select>
+    </div>
+    <div class="seg scroll">
+      ${[["all","Everyone"],["overdue","Overdue"],["owing","Owing"],["credit","In credit"],["nophone","No number"],["off","Paused"]]
+        .map(([k,l])=>`<button class="${F===k?"on":""}" onclick="UI.custFilter='${k}';pgCustomers()">${l}</button>`).join("")}
+    </div>
+    <div id="custResults">${custListHTML()}</div>`;
+}
+
+/* ---- MONEY ---- */
+function pgMoney(){
+  const T=UI.moneyTab;
+  const liveAll=activeJobs().filter(j=>j.bal>0&&!isStale(j));
+  const stale=activeJobs().filter(isStale);
+  const credit=activeJobs().filter(j=>j.bal<0);
+  $("p-money").innerHTML=`
+    <div class="pagetitle" style="margin-top:8px">Money</div>
+    <div class="pagesub">${liveAll.length} live debts · ${stale.length} stale · ${credit.length} in credit</div>
+    <div class="stats">
+      <div class="stat glass owed"><b>${fmt(liveAll.reduce((s,j)=>s+j.bal,0))}</b><span>Live owed</span></div>
+      <div class="stat glass"><b>${fmt(totalCredit())}</b><span>Total credit</span></div>
+      <div class="stat glass"><b>${fmt(collectedIn(7))}</b><span>This week</span></div>
+    </div>
+    <div class="searchwrap" style="margin-bottom:10px">
+      <span class="si">🔍</span>
+      <input id="moneySearch" placeholder="Find who owes — name, street or round" value="${esc(UI.moneyQ)}" oninput="UI.moneyQ=this.value;renderDebts();toggleClear('moneyClear',this.value)">
+      <button class="clearbtn" id="moneyClear" style="display:${UI.moneyQ?"grid":"none"}" onclick="UI.moneyQ='';pgMoney();setTimeout(()=>$('moneySearch')&&$('moneySearch').focus(),0)" aria-label="Clear">✕</button>
+    </div>
+    <div class="seg">
+      ${[["owed","Owed"],["credit","Credit"],["stale","Stale"],["over","Overview"]]
+        .map(([k,l])=>`<button class="${T===k?"on":""}" onclick="UI.moneyTab='${k}';pgMoney()">${l}</button>`).join("")}
+    </div>
+    ${T==="owed"?debtControls()+`<div id="debtResults">${debtListHTML("owed")}</div>`
+      :T==="credit"?`<div id="debtResults">${debtListHTML("credit")}</div>`
+      :T==="stale"?debtListHTML("stale"):overview()}`;
+}
+function debtControls(){
+  return `<div class="selrow">
+    <select onchange="UI.moneySort=this.value;renderDebts()">
+      ${[["owed-desc","Most owed"],["owed-asc","Least owed"],["name","Name A–Z"],["round","By round"],["oldest","Oldest first"]]
+        .map(([k,l])=>`<option value="${k}" ${UI.moneySort===k?"selected":""}>${l}</option>`).join("")}
+    </select>
+    <select onchange="UI.moneyRound=this.value;renderDebts()">
+      <option value="all" ${UI.moneyRound==="all"?"selected":""}>All rounds</option>
+      ${roundsSorted().map(r=>`<option value="${r.id}" ${UI.moneyRound===r.id?"selected":""}>${esc(r.name)}</option>`).join("")}
+    </select>
+  </div>`;
+}
+function renderDebts(){ const el=$("debtResults"); if(el) el.innerHTML=debtListHTML(UI.moneyTab==="credit"?"credit":UI.moneyTab==="stale"?"stale":"owed"); }
+function debtListHTML(mode){
+  const q=UI.moneyQ.toLowerCase().trim();
+  let js=activeJobs().filter(j=>{
+    if(mode==="stale") return isStale(j);
+    if(mode==="credit") return j.bal<0;
+    return j.bal>0&&!isStale(j);
+  });
+  if(q) js=js.filter(j=>(j.name+" "+j.addr+" "+roundName(j)).toLowerCase().includes(q));
+  if(mode==="owed" && UI.moneyRound!=="all") js=js.filter(j=>j.roundId===UI.moneyRound);
+  const sort=mode==="owed"?UI.moneySort:"owed-desc";
+  js.sort((a,b)=>{
+    if(sort==="owed-asc") return a.bal-b.bal;
+    if(sort==="name") return nameOf(a).localeCompare(nameOf(b));
+    if(sort==="round") return roundName(a).localeCompare(roundName(b))||b.bal-a.bal;
+    if(sort==="oldest") return (a.bd||"9999")<(b.bd||"9999")?-1:1;
+    return Math.abs(b.bal)-Math.abs(a.bal);
+  });
+  if(!js.length) return `<div class="empty"><div>${mode==="stale"?"🗃":mode==="credit"?"💳":"✅"}</div><b>${mode==="stale"?"No stale debts":mode==="credit"?"Nobody in credit":"Nothing outstanding"}</b>${mode==="stale"?"Anything older than 12 months lands here.":mode==="credit"?"No one has overpaid.":"Everyone's square with you."}</div>`;
+  return `${mode==="stale"?`<div class="preview">Balances untouched for over 12 months — kept out of the live figure. Write one off and it's logged.</div>`:""}
+  <div class="list glass">${js.map(j=>`<div class="item">
+    <div class="grow" onclick="jobSheet('${j.id}')"><b>${esc(nameOf(j))}</b><span>${esc(j.addr)} · ${esc(roundName(j))}${j.bd?" · since "+uk(j.bd):""}</span></div>
+    <div class="num ${j.bal<0?"clear":"owe"}">${j.bal<0?fmt(-j.bal)+" in credit":fmt(j.bal)}</div>
+    ${j.bal>0?`<button class="iconbtn" style="width:34px;height:34px;font-size:13px" onclick="paySheet('${j.id}')">£</button>`:""}
+    ${j.ph&&j.bal>0?`<button class="iconbtn" style="width:34px;height:34px;font-size:13px" onclick="sms('${j.id}','chase')">✉</button>`:""}
+    ${mode==="stale"?`<button class="iconbtn" style="width:34px;height:34px;font-size:13px" onclick="writeOff('${j.id}')">✕</button>`:""}
+  </div>`).join("")}</div>`;
+}
+function collectedIn(days,offset){
+  offset=offset||0;
+  const from=addD(TODAY(),-(days+offset)+1), to=addD(TODAY(),-offset);
+  return S.jobs.reduce((s,j)=>s+j.hist.filter(h=>h.t==="payment"&&h.d>=from&&h.d<=to).reduce((a,b)=>a+b.a,0),0);
+}
+function plannedIn(days){
+  const map=projection(days);
+  return Object.values(map).flat().reduce((s,j)=>s+j.price,0);
+}
+function overview(){
+  const rs=roundsSorted().map(r=>({name:r.name,val:jobsInRound(r.id).filter(isActive).reduce((s,j)=>s+Math.max(0,j.bal),0)})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
+  const prices=activeJobs().filter(j=>j.price>0).map(j=>j.price);
+  const avg=prices.reduce((a,b)=>a+b,0)/(prices.length||1);
+  const noPrice=activeJobs().filter(j=>!j.price).length;
+  const monthStart=TODAY().slice(0,8)+"01";
+  const month=S.jobs.reduce((s,j)=>s+j.hist.filter(h=>h.t==="payment"&&h.d>=monthStart).reduce((a,b)=>a+b.a,0),0);
+  return `<div class="sect">Collected vs planned</div>
+    <div class="list glass">
+      <div class="item"><div class="grow"><b>This week</b><span>Last 7 days</span></div><div class="num clear">${fmt(collectedIn(7))}</div></div>
+      <div class="item"><div class="grow"><b>Last week</b><span>The 7 days before</span></div><div class="num">${fmt(collectedIn(7,7))}</div></div>
+      <div class="item"><div class="grow"><b>This month</b><span>Since ${uk(monthStart)}</span></div><div class="num clear">${fmt(month)}</div></div>
+      <div class="item"><div class="grow"><b>Planned, next 4 weeks</b><span>From the schedule</span></div><div class="num owe">${fmt(plannedIn(28))}</div></div>
+    </div>
+    ${rs.length?`<div class="sect">Debt by round</div>
+      ${rs.map(x=>`<div class="bar"><div class="lbl">${esc(x.name)}</div>
+        <div class="track"><div class="fill" style="width:${x.val/rs[0].val*100}%"></div></div>
+        <div class="val">${fmt(Math.round(x.val))}</div></div>`).join("")}`:""}
+    <div class="sect">Health check</div>
+    <div class="list glass">
+      <div class="item"><div class="grow"><b>Average job price</b><span>Across priced jobs</span></div><div class="num">${fmt(avg.toFixed(2))}</div></div>
+      <div class="item" onclick="UI.custFilter='all';UI.custQ='';go('customers')"><div class="grow"><b>Jobs with no price</b><span>Quote them next visit</span></div><div class="num ${noPrice?"bad":""}">${noPrice}</div></div>
+      <div class="item"><div class="grow"><b>Debts over £200</b><span>Worth a phone call</span></div><div class="num owe">${activeJobs().filter(j=>j.bal>200).length}</div></div>
+      <div class="item"><div class="grow"><b>On request jobs</b><span>Not on a schedule</span></div><div class="num">${activeJobs().filter(j=>!j.weeks).length}</div></div>
+    </div>`;
+}
+
+/* ---- TEXTS ---- */
+const TXTYPES=[["remind","Reminder"],["onway","On my way"],["done","Windows done"],["chase","Debt chaser"]];
+function txRecipients(){
+  const type=UI.txType;
+  let js;
+  if(type==="chase") js=activeJobs().filter(j=>j.bal>0);
+  else if(type==="remind"){
+    js=activeJobs().filter(j=>j.weeks>0&&j.next&&dt(j.next)>=dt(TODAY()));
+    if(UI.txDate) js=js.filter(j=>j.next===UI.txDate);
+  } else js=dueToday();
+  if(UI.txRound!=="all") js=js.filter(j=>j.roundId===UI.txRound);
+  if(UI.txHasNumber==="yes") js=js.filter(j=>j.ph);
+  if(UI.txHasNumber==="no") js=js.filter(j=>!j.ph);
+  return js.sort((a,b)=>roundName(a).localeCompare(roundName(b))||a.seq-b.seq);
+}
+function pgTexts(){
+  const type=UI.txType;
+  const upcoming=[...new Set(activeJobs().filter(j=>j.weeks>0&&j.next&&dt(j.next)>=dt(TODAY())).map(j=>j.next))].sort();
+  if(type==="remind" && UI.txDate && !upcoming.includes(UI.txDate)) UI.txDate="";
+  const list=txRecipients();
+  const able=list.filter(j=>j.ph);
+  const sample=list[0]||{name:"there",addr:"—",price:0,bal:0};
+  $("p-texts").innerHTML=`
+    <div class="pagetitle" style="margin-top:8px">Texts</div>
+    <div class="pagesub">Pick the message, then send them one by one</div>
+    <div class="txttype">
+      ${TXTYPES.map(([k,l])=>`<button class="${type===k?"on":""}" onclick="UI.txType='${k}';pgTexts()">${l}</button>`).join("")}
+    </div>
+    ${type==="remind"?`<div class="seg scroll">
+      <button class="${!UI.txDate?"on":""}" onclick="UI.txDate='';pgTexts()">All upcoming</button>
+      ${upcoming.slice(0,8).map(d=>`<button class="${UI.txDate===d?"on":""}" onclick="UI.txDate='${d}';pgTexts()">${shortD(d)}</button>`).join("")}
+    </div>`:""}
+    <div class="selrow">
+      <select onchange="UI.txRound=this.value;pgTexts()">
+        <option value="all" ${UI.txRound==="all"?"selected":""}>All rounds</option>
+        ${roundsSorted().map(r=>`<option value="${r.id}" ${UI.txRound===r.id?"selected":""}>${esc(r.name)}</option>`).join("")}
+      </select>
+    </div>
+    <div class="seg scroll">
+      ${[["all","Everyone"],["yes","Has number"],["no","No number"]].map(([k,l])=>
+        `<button class="${UI.txHasNumber===k?"on":""}" onclick="UI.txHasNumber='${k}';pgTexts()">${l}</button>`).join("")}
+    </div>
+    <div class="preview">${esc(fill(S.settings.tpl[type],sample,sample.next||UI.txDate))}
+      <button class="btn ghost" style="padding:4px 10px;font-size:12px;margin-top:8px" onclick="openSettings('msg')">Edit wording</button></div>
+    <div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22)">Demo — Send opens your Messages app with the text ready. Nothing goes out until you hit send there.</div>
+    <div class="sect"><span>${list.length} ${type==="chase"?"owing":type==="remind"?"scheduled":"on today"}</span><span>${able.length} textable</span></div>
+    ${list.length?`<div class="list glass">${list.map(j=>`<div class="item">
+      <div class="grow" onclick="jobSheet('${j.id}')"><b>${esc(nameOf(j))}</b>
+        <span>${esc(j.addr)}${type==="chase"?" · owes "+fmt(j.bal):type==="remind"?" · "+uk(j.next):""}</span></div>
+      ${j.ph?`<button class="${j._sent?"sendbtn done":"sendbtn"}" onclick="sms('${j.id}','${type}')">${j._sent?"✓ Sent":"Send"}</button>`
+        :`<span class="nonum">No number</span>`}
+    </div>`).join("")}</div>
+    ${able.length>1?`<button class="btn" style="width:100%;margin-top:12px" onclick="markAllSent()">Mark all ${able.length} as sent</button>`:""}`
+    :`<div class="empty"><div>💬</div><b>Nobody to text</b>${type==="chase"?"No outstanding debts.":type==="remind"?"No upcoming jobs for that filter.":"No jobs due today."}</div>`}`;
+}
+function markAllSent(){
+  txRecipients().filter(j=>j.ph).forEach(j=>j._sent=true);
+  pgTexts(); toast("Marked as sent");
+}
+function fill(t,j,date){
+  return t.replace(/{name}/g,j.name||"there").replace(/{address}/g,j.addr||"")
+    .replace(/{price}/g,j.price?fmt(j.price):"the usual").replace(/{balance}/g,fmt(j.bal||0))
+    .replace(/{date}/g,date?shortD(date):shortD(TODAY())).replace(/{biz}/g,S.settings.biz).replace(/{pay}/g,S.settings.payDetails);
+}
+function sms(id,kind){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  if(!j.ph){ toast("No number on file"); return; }
+  const body=encodeURIComponent(fill(S.settings.tpl[kind],j,j.next));
+  window.location.href="sms:"+j.ph.replace(/\s/g,"")+"?&body="+body;
+  j._sent=true; pgTexts();
+}
+function navTo(id){
+  const j=S.jobs.find(x=>x.id===id);
+  const q=encodeURIComponent([j.addr,j.pc,"Kent, UK"].filter(Boolean).join(", "));
+  window.open("https://www.google.com/maps/search/?api=1&query="+q,"_blank");
+}
+
+/* ================= ACTIONS ================= */
+function finishDone(id,status,amt){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  let paid = status==="full" ? j.price : status==="part" ? amt : 0;
+  const el=$("c"+id);
+  const apply=()=>{
+    snap();
+    j.last=TODAY();
+    advanceNext(j);
+    if(j.price>0) log(j,"charge",j.price,"Clean");
+    log(j,"done",j.price,status==="full"?"Paid in full":status==="part"?"Part paid "+fmt(paid):j.price?"Not paid":"Done");
+    if(paid>0) log(j,"payment",paid,status==="full"?"Paid in full":"Part payment");
+    recalcBal(j);
+    j.bd=j.bal>0?TODAY():"";
+    save(); render();
+    const msg = status==="none" && j.price ? fmt(j.price)+" added to their bill"
+      : paid>0 ? fmt(paid)+" taken" : "logged";
+    toast("Cleaned · "+msg,"Undo",undo);
+  };
+  if(el){ el.classList.add("cleaning"); setTimeout(apply,700); } else apply();
+}
+function partPay(id){
+  const j=S.jobs.find(x=>x.id===id);
+  sheet(`<h3>Part payment</h3><div class="sub">${esc(nameOf(j))} · full price ${fmt(j.price)}</div>
+    <label>How much did they hand over?</label>
+    <input id="partAmt" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 10" autofocus>
+    <div class="preview">The rest goes onto their balance and the job's marked cleaned.</div>
+    <button class="btn primary" style="width:100%" onclick="confirmPart('${id}')">Record and mark done</button>`);
+}
+function confirmPart(id){
+  const amt=parseFloat($("partAmt").value)||0;
+  if(amt<=0){ toast("Enter an amount first"); return; }
+  closeSheet(); finishDone(id,"part",amt);
+}
+function skipSheet(id){
+  const j=S.jobs.find(x=>x.id===id);
+  sheet(`<h3>Skip ${esc(nameOf(j))}</h3><div class="sub">Next due moves on ${j.weeks} weeks. No charge.</div>
+    <label>Reason (optional)</label>
+    <input id="skipWhy" placeholder="Car on drive, gate locked, away…">
+    <div class="acts">
+      <button class="btn primary" onclick="doSkip('${id}')">Skip this visit</button>
+      <button class="btn ghost" onclick="closeSheet()">Cancel</button>
+    </div>`);
+}
+function doSkip(id){
+  const j=S.jobs.find(x=>x.id===id), why=($("skipWhy").value||"").trim();
+  closeSheet(); snap();
+  const el=$("c"+id);
+  const apply=()=>{
+    j.last=TODAY();
+    advanceNext(j);
+    log(j,"skip",0,why||"No reason given");
+    save(); render(); toast("Skipped — rolled to "+uk(j.next),"Undo",undo);
+  };
+  if(el){ el.style.transition="opacity .3s,transform .3s"; el.style.opacity=0; el.style.transform="translateX(-30px)"; setTimeout(apply,300); } else apply();
+}
+function rainDay(){
+  const list=dueToday();
+  if(!list.length){ toast("Nothing left to move"); return; }
+  sheet(`<h3>Rain day</h3><div class="sub">Push today's ${list.length} remaining jobs forward. Round order stays as it is.</div>
+    <label>Shift by</label>
+    <select id="rainN"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="7">1 week</option></select>
+    <button class="btn primary" style="width:100%" onclick="doRain()">Move ${list.length} jobs</button>`);
+}
+function doRain(){
+  const n=+$("rainN").value, list=dueToday();
+  closeSheet(); snap();
+  list.forEach(j=>{ j.next=addD(TODAY(),n); log(j,"skip",0,"Rain day — moved "+n+" day"+(n>1?"s":"")); });
+  save(); render();
+  toast(list.length+" jobs moved to "+uk(addD(TODAY(),n)),"Undo",undo);
+}
+function paySheet(id){
+  const j=S.jobs.find(x=>x.id===id);
+  sheet(`<h3>${esc(nameOf(j))}</h3><div class="sub">${esc(j.addr)} · owes ${fmt(j.bal)}</div>
+    <label>Amount received</label><input id="payAmt" type="number" step="0.01" inputmode="decimal" value="${j.bal>0?j.bal:""}">
+    <label>Method</label><select id="payHow"><option>Cash</option><option>Bank transfer</option><option>Card</option><option>GoCardless</option></select>
+    <div class="preview">Paying more than they owe simply puts them in credit — no need to work it out.</div>
+    <button class="btn primary" style="width:100%" onclick="takePayment('${id}')">Record payment</button>`);
+}
+function takePayment(id){
+  const j=S.jobs.find(x=>x.id===id), amt=parseFloat($("payAmt").value)||0, how=$("payHow").value;
+  if(amt<=0){ toast("Enter an amount first"); return; }
+  snap();
+  log(j,"payment",amt,how);
+  recalcBal(j);
+  j.pay=how; j.bd=j.bal>0?TODAY():"";
+  closeSheet(); save(); render(); toast(fmt(amt)+" recorded from "+nameOf(j),"Undo",undo);
+}
+function writeOff(id){
+  const j=S.jobs.find(x=>x.id===id);
+  sheet(`<h3>Write off ${fmt(j.bal)}?</h3><div class="sub">${esc(nameOf(j))} · last movement ${uk(j.bd)}</div>
+    <label>Reason</label><input id="woWhy" placeholder="Moved away, gone quiet, goodwill…">
+    <div class="acts"><button class="btn danger" onclick="doWriteOff('${id}')">Write it off</button>
+      <button class="btn ghost" onclick="closeSheet()">Cancel</button></div>`);
+}
+function doWriteOff(id){
+  const j=S.jobs.find(x=>x.id===id), why=($("woWhy").value||"").trim()||"No reason given";
+  if(j.bal<=0){ toast("Nothing to write off"); closeSheet(); return; }
+  snap(); log(j,"writeoff",j.bal,why); recalcBal(j); j.bd="";
+  closeSheet(); save(); render(); toast("Written off","Undo",undo);
+}
+
+/* ---- sheets: job, edit, round, day ---- */
+function jobSheet(id){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  const hist=j.hist.map((h,idx)=>({...h,idx})).reverse();
+  sheet(`<h3>${esc(nameOf(j))}</h3><div class="sub">${esc(j.addr)} · ${esc(roundName(j))} #${j.seq}</div>
+    <div class="kv"><span>Price</span><b>${j.price?fmt(j.price):"not set"}</b></div>
+    <div class="kv"><span>Frequency</span><b>${freqLabel(j.weeks)}</b></div>
+    <div class="kv"><span>Last done</span><b>${uk(j.last)}</b></div>
+    <div class="kv"><span>Next due</span><b${!j.next?' style="color:var(--faint)"':''}>${j.next?uk(j.next):"Unscheduled"}</b></div>
+    <div class="kv"><span>Balance</span><b style="color:${j.bal>0?"var(--suds)":j.bal<0?"var(--aqua)":"var(--clean)"}">${j.bal>0?fmt(j.bal)+" owed":j.bal<0?fmt(-j.bal)+" in credit":"clear"}</b></div>
+    <div class="kv"><span>Pays by</span><b>${esc(j.pay)}</b></div>
+    <div class="kv"><span>Mobile</span><b>${j.ph?`<a href="tel:${esc(j.ph.replace(/\s/g,''))}" style="color:var(--aqua);text-decoration:none">${esc(j.ph)}</a>`:"—"}</b></div>
+    <div class="kv"><span>Time</span><b>${j.mins} min</b></div>
+    <div class="kv"><span>Status</span><b>${esc(j.status)}</b></div>
+    ${j.notes?`<div class="kv"><span>Notes</span><b style="font-family:Inter">${esc(j.notes)}</b></div>`:""}
+    <div class="acts" style="margin-top:14px">
+      <button class="btn primary" onclick="editSheet('${id}')">Edit</button>
+      <button class="btn ghost" onclick="navTo('${id}')">Navigate</button>
+      ${j.ph?`<button class="btn ghost" onclick="sms('${id}','done')">Text</button>`:""}
+      ${j.bal>0?`<button class="btn ghost" onclick="paySheet('${id}')">£</button>`:""}
+    </div>
+    ${j.ph?`<div class="acts" style="margin-top:8px"><a class="btn ghost" style="text-decoration:none;display:grid;place-items:center" href="tel:${esc(j.ph.replace(/\s/g,''))}">📞 Call ${esc(nameOf(j))}</a></div>`:""}
+    <button class="btn primary" style="width:100%;margin-top:10px" onclick="scheduleSheet('${id}')">📅 ${j.next?"Reschedule":"Schedule to a day"}</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px" onclick="moveJobRoundSheet('${id}')">Move to another round</button>
+    <div class="sect"><span>History</span>${hist.length?`<span style="text-transform:none;letter-spacing:0;color:var(--faint)">tap ✎ to fix</span>`:""}</div>
+    ${hist.length?hist.map(x=>`<div class="tl">
+      <div class="d">${uk(x.d)}</div>
+      <div class="b">${HLABEL[x.t]||x.t}${x.n?" · "+esc(x.n):""}</div>
+      <div class="a">${x.a?fmt(x.a):""}</div>
+      <div class="hedit">
+        <button onclick="editHist('${id}',${x.idx})" aria-label="Edit">✎</button>
+        <button onclick="delHist('${id}',${x.idx})" aria-label="Delete">✕</button>
+      </div></div>`).join("")
+    :`<div class="preview">Nothing logged yet. Marking done, skipping and payments all land here.</div>`}`);
+}
+function moveJobRoundSheet(id){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  sheet(`<h3>Move to another round</h3><div class="sub">${esc(nameOf(j))} joins at the end of the new round</div>
+    ${roundPicker(roundName(j),"mv")}
+    <button class="btn primary" style="width:100%" onclick="doMoveJobRound('${id}')">Move</button>`);
+}
+function doMoveJobRound(id){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  const name=pickedRoundName("mv");
+  const r=ensureRound(name);
+  snap(); j.roundId=r.id; j.seq=activeJobs().filter(x=>x.roundId===r.id).length;
+  closeSheet(); save(); render(); toast("Moved to "+r.name,"Undo",undo);
+}
+function delHist(id,idx){
+  const j=S.jobs.find(x=>x.id===id), h=j.hist[idx]; if(!h) return;
+  const doneEntries=j.hist.filter(x=>x.t==="done").sort((a,b)=>a.d<b.d?-1:1);
+  const isLatestDone=h.t==="done" && doneEntries.length && doneEntries[doneEntries.length-1]===h;
+  sheet(`<h3>Delete this entry?</h3><div class="sub">${uk(h.d)} · ${HLABEL[h.t]||h.t}${h.a?" · "+fmt(h.a):""}</div>
+    <div class="preview">${["payment","writeoff","opening","charge","adjustment"].includes(h.t)?"The balance is recalculated from what's left in the ledger.":"The log entry is removed."}</div>
+    ${isLatestDone&&j.weeks>0?`<div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22)">This is the most recent clean. You can roll the schedule back one cycle so next due reflects that it wasn't actually done.</div>
+    <div class="acts"><button class="btn danger" onclick="doDelHist('${id}',${idx},true)">Delete and roll schedule back</button>
+      <button class="btn" onclick="doDelHist('${id}',${idx},false)">Delete, keep schedule</button></div>`
+    :`<div class="acts"><button class="btn danger" onclick="doDelHist('${id}',${idx},false)">Delete entry</button></div>`}
+    <div class="acts" style="margin-top:6px"><button class="btn ghost" style="width:100%" onclick="jobSheet('${id}')">Cancel</button></div>`);
+}
+function doDelHist(id,idx,rollback){
+  snap(); const j=S.jobs.find(x=>x.id===id), h=j.hist[idx]; if(!h) return;
+  j.hist.splice(idx,1);
+  recalcBal(j); j.bd=j.bal>0?(j.bd||TODAY()):"";
+  if(rollback && j.weeks>0){
+    j.next=addD(j.next,-j.weeks*7);
+    const remaining=j.hist.filter(x=>x.t==="done").sort((a,b)=>a.d<b.d?-1:1);
+    j.last=remaining.length?remaining[remaining.length-1].d:"";
+  }
+  save(); render(); jobSheet(id); toast("Entry deleted","Undo",undo);
+}
+function editHist(id,idx){
+  const j=S.jobs.find(x=>x.id===id), h=j.hist[idx]; if(!h) return;
+  sheet(`<h3>Edit entry</h3><div class="sub">${HLABEL[h.t]||h.t}</div>
+    <label>Date</label><input id="h_d" type="date" value="${h.d}">
+    ${["payment","opening","charge","writeoff","adjustment"].includes(h.t)?`<label>Amount</label><input id="h_a" type="number" step="0.01" inputmode="decimal" value="${h.a}">`:""}
+    <label>Note</label><input id="h_n" value="${esc(h.n||"")}">
+    <div class="preview">The balance is recalculated from the whole ledger after saving.</div>
+    <button class="btn primary" style="width:100%" onclick="doEditHist('${id}',${idx})">Save entry</button>`);
+}
+function doEditHist(id,idx){
+  snap(); const j=S.jobs.find(x=>x.id===id), h=j.hist[idx]; if(!h) return;
+  const nd=$("h_d").value||h.d, nn=($("h_n").value||"").trim();
+  const amtEl=$("h_a");
+  if(amtEl) h.a=parseFloat(amtEl.value)||0;
+  h.d=nd; h.n=nn;
+  recalcBal(j); j.bd=j.bal>0?(j.bd||TODAY()):"";
+  save(); render(); jobSheet(id); toast("Entry updated","Undo",undo);
+}
+function roundPicker(curName,p){
+  const rs=roundsSorted();
+  return `<label>Round</label>
+    <select id="${p}_round" onchange="$('${p}_newwrap').style.display=this.value==='__new__'?'block':'none'">
+      ${rs.map(r=>`<option value="${esc(r.name)}" ${curName===r.name?"selected":""}>${esc(r.name)}</option>`).join("")}
+      <option value="__new__" ${rs.length?"":"selected"}>＋ New round…</option>
+    </select>
+    <div id="${p}_newwrap" style="display:${rs.length?"none":"block"}"><input id="${p}_newround" placeholder="New round name"></div>`;
+}
+function pickedRoundName(p){
+  const el=$(p+"_round"); if(!el) return "Unassigned";
+  if(el.value==="__new__") return ($(p+"_newround").value||"").trim()||"Unassigned";
+  return el.value;
+}
+function editSheet(id){
+  const j=id?S.jobs.find(x=>x.id===id):null;
+  const v=j||{name:"",addr:"",ph:"",ph2:"",email:"",seq:99,price:"",weeks:4,next:TODAY(),bal:0,notes:"",pay:"Cash",mins:S.settings.mins,status:"active"};
+  const curRoundName=j?roundName(j):(roundsSorted()[0]?roundsSorted()[0].name:"");
+  sheet(`<h3>${j?"Edit job":"New customer"}</h3><div class="sub">${j?esc(j.addr):"Everything can be changed later"}</div>
+    <label>Name</label><input id="e_name" value="${esc(v.name)}" placeholder="Leave blank to use the address">
+    <label>Address</label><input id="e_addr" value="${esc(v.addr)}">
+    <label>Postcode</label><input id="e_pc" value="${esc(v.pc||"")}">
+    ${roundPicker(curRoundName,"e")}
+    <div class="two"><div><label>Phone</label><input id="e_ph" value="${esc(v.ph)}" inputmode="tel"></div>
+      <div><label>Second phone</label><input id="e_ph2" value="${esc(v.ph2||"")}" inputmode="tel"></div></div>
+    <label>Email</label><input id="e_email" value="${esc(v.email||"")}" inputmode="email">
+    <div class="two"><div><label>Price</label><input id="e_price" type="number" step="0.5" inputmode="decimal" value="${v.price}"></div>
+      <div><label>Every</label><select id="e_weeks">${S.settings.freqs.map(w=>`<option value="${w}" ${v.weeks===w?"selected":""}>${freqLabel(w)}</option>`).join("")}</select></div></div>
+    <div class="two"><div><label>Next due</label><input id="e_next" type="date" value="${v.next||""}"></div>
+      <div><label>Sequence in round</label><input id="e_seq" type="number" value="${v.seq}"></div></div>
+    <div class="two"><div><label>Balance owed</label><input id="e_bal" type="number" step="0.01" inputmode="decimal" value="${v.bal}"></div>
+      <div><label>Minutes</label><input id="e_mins" type="number" value="${v.mins}"></div></div>
+    <div class="preview" style="margin-top:-4px">Negative balance means the customer is in credit.</div>
+    <label>Pays by</label><select id="e_pay">${["Cash","Bank transfer","Card","GoCardless"].map(p=>`<option ${v.pay===p?"selected":""}>${p}</option>`).join("")}</select>
+    <label>Notes</label><textarea id="e_notes" rows="2" placeholder="Gate code, dog, knock first, front only…">${esc(v.notes)}</textarea>
+    <button class="btn primary" style="width:100%" onclick="saveJob(${j?`'${id}'`:"null"})">${j?"Save changes":"Add customer"}</button>
+    ${j?`<div class="acts" style="margin-top:10px">
+      <button class="btn" onclick="setStatus('${id}','${j.status==="paused"?"active":"paused"}')">${j.status==="paused"?"Resume":"Pause"}</button>
+      <button class="btn" onclick="setStatus('${id}','${j.status==="archived"?"active":"archived"}')">${j.status==="archived"?"Restore":"Archive"}</button>
+      <button class="btn danger" onclick="confirmDelete('${id}')">Delete</button>
+    </div>
+    <div class="preview" style="margin-top:10px">Pausing keeps them on the books but off the round. Archiving hides them and keeps the history. Delete removes everything.</div>`:""}`);
+}
+function saveJob(id){
+  const g=k=>$("e_"+k).value;
+  const j=id?S.jobs.find(x=>x.id===id):null;
+  const addr=g("addr").trim();
+  if(!addr){ toast("An address is needed"); return; }
+  snap();
+  const price=parseFloat(g("price"))||0;
+  const r=ensureRound(pickedRoundName("e"));
+  const newBal=parseFloat(g("bal"))||0;
+  if(j){
+    if(price!==j.price){ j.ps=TODAY(); }
+    const delta=Math.round((newBal-j.bal)*100)/100;
+    if(delta!==0) log(j,"adjustment",delta,"Balance edited manually");
+    Object.assign(j,{name:g("name").trim(),addr,pc:g("pc").trim(),roundId:r.id,
+      ph:g("ph").trim(),ph2:g("ph2").trim(),email:g("email").trim(),price,weeks:+g("weeks"),
+      next:g("next"),seq:+g("seq")||99,mins:+g("mins")||30,pay:g("pay"),notes:g("notes").trim()});
+    recalcBal(j);
+    if(j.bal>0&&!j.bd) j.bd=TODAY(); if(j.bal<=0) j.bd="";
+  }else{
+    const nj={id:"j"+Date.now(),jid:0,name:g("name").trim(),addr,pc:g("pc").trim(),roundId:r.id,
+      seq:+g("seq")||(activeJobs().filter(x=>x.roundId===r.id).length+1),price,weeks:+g("weeks"),next:g("next"),last:"",
+      ph:g("ph").trim(),ph2:g("ph2").trim(),email:g("email").trim(),ps:TODAY(),
+      notes:g("notes").trim(),pay:g("pay"),mins:+g("mins")||30,status:"active",hist:[],bal:0,bd:""};
+    if(newBal) nj.hist.push({id:"h"+Date.now(),d:TODAY(),t:"opening",a:newBal,n:"Opening balance"});
+    recalcBal(nj); nj.bd=nj.bal>0?TODAY():"";
+    S.jobs.push(nj);
+  }
+  closeSheet(); save(); render(); toast(j?"Saved":"Customer added","Undo",undo);
+}
+function quickAdd(){
+  sheet(`<h3>New customer</h3><div class="sub">Quick sign-up — full details can wait</div>
+    <label>Address</label><input id="q_addr" placeholder="12 Cow Lane" autofocus>
+    <label>Name (optional)</label><input id="q_name" placeholder="Mrs Cliffe">
+    <div class="two"><div><label>Price</label><input id="q_price" type="number" step="0.5" inputmode="decimal" placeholder="15"></div>
+      <div><label>Every</label><select id="q_weeks">${S.settings.freqs.map(w=>`<option value="${w}" ${w===4?"selected":""}>${freqLabel(w)}</option>`).join("")}</select></div></div>
+    ${roundPicker(roundsSorted()[0]?roundsSorted()[0].name:"","q")}
+    <button class="btn primary" style="width:100%" onclick="doQuickAdd()">Add and carry on</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px" onclick="editSheet(null)">Full form instead</button>`);
+}
+function doQuickAdd(){
+  const addr=$("q_addr").value.trim();
+  if(!addr){ toast("An address is needed"); return; }
+  snap();
+  const r=ensureRound(pickedRoundName("q"));
+  S.jobs.push({id:"j"+Date.now(),jid:0,name:($("q_name").value||"").trim(),addr,pc:"",roundId:r.id,seq:activeJobs().filter(j=>j.roundId===r.id).length+1,
+    price:parseFloat($("q_price").value)||0,weeks:+$("q_weeks").value,next:TODAY(),last:"",bal:0,ph:"",ph2:"",email:"",
+    bd:"",ps:TODAY(),notes:"",pay:"Cash",mins:S.settings.mins,status:"active",hist:[]});
+  closeSheet(); save(); render(); toast(addr+" added to "+r.name,"Undo",undo);
+}
+function setStatus(id,st){
+  snap(); const j=S.jobs.find(x=>x.id===id); j.status=st;
+  closeSheet(); save(); render(); toast(nameOf(j)+" "+(st==="active"?"back on the round":st),"Undo",undo);
+}
+function confirmDelete(id){
+  const j=S.jobs.find(x=>x.id===id);
+  sheet(`<h3>Delete ${esc(nameOf(j))}?</h3><div class="sub">This removes the job and its whole history. Archiving keeps the record.</div>
+    <div class="acts"><button class="btn danger" onclick="doDelete('${id}')">Delete for good</button>
+      <button class="btn ghost" onclick="editSheet('${id}')">Back</button></div>`);
+}
+function doDelete(id){
+  snap(); const j=S.jobs.find(x=>x.id===id);
+  S.jobs=S.jobs.filter(x=>x.id!==id);
+  closeSheet(); save(); render(); toast(nameOf(j)+" deleted","Undo",undo);
+}
+function roundSheet(id){
+  const r=S.rounds.find(x=>x.id===id); if(!r) return;
+  const js=jobsInRound(id).filter(isActive).sort((a,b)=>a.seq-b.seq);
+  const nextDay=js.filter(j=>j.next).map(j=>j.next).sort()[0]||"";
+  const unsched=js.filter(j=>j.weeks>0&&!j.next).length;
+  sheet(`<h3>${esc(r.name)}</h3><div class="sub">${js.length} jobs · ${fmt(js.reduce((s,j)=>s+j.price,0))} per visit · ${Math.round(js.reduce((s,j)=>s+j.mins,0)/6)/10} hrs${unsched?` · ${unsched} unscheduled`:""}</div>
+    <label>Round name</label>
+    <div style="display:flex;gap:8px"><input id="rName" value="${esc(r.name)}"><button class="btn" style="flex:0 0 auto;margin-bottom:10px" onclick="renameRound('${id}')">Rename</button></div>
+    ${unsched?`<button class="btn primary" style="width:100%;margin-bottom:10px" onclick="scheduleRoundSheet('${id}')">📅 Put ${unsched} unscheduled job${unsched===1?"":"s"} on a day</button>`:""}
+    ${nextDay?`<button class="btn" style="width:100%;margin-bottom:12px" onclick="moveSheet('round','${id}','${nextDay}')">Move whole round to a date</button>`:""}
+    <button class="btn ghost" style="width:100%;margin-bottom:12px" onclick="deleteRoundSheet('${id}')">Delete round</button>
+    <div class="sect">Order · use arrows to resequence</div>
+    <div class="list" style="background:rgba(255,255,255,.05);border:1px solid var(--edge)">
+      ${js.map((j,i)=>`<div class="item">
+        <div class="grow" onclick="jobSheet('${j.id}')"><b>${j.seq}. ${esc(j.addr)}</b><span>${j.next?uk(j.next):"unscheduled"} · ${j.mins} min</span></div>
+        <div class="num">${fmt(j.price)}</div>
+        <div class="cardtools">
+          <button ${i===0?"disabled":""} onclick="moveSeq('${j.id}',-1)">↑</button>
+          <button ${i===js.length-1?"disabled":""} onclick="moveSeq('${j.id}',1)">↓</button>
+        </div>
+      </div>`).join("")}
+    </div>`);
+}
+/* schedule every unscheduled job in a round onto one day (they then recur on their own cadence) */
+function scheduleRoundSheet(id){
+  const r=S.rounds.find(x=>x.id===id); if(!r) return;
+  const n=jobsInRound(id).filter(j=>isActive(j)&&j.weeks>0&&!j.next).length;
+  sheet(`<h3>Schedule ${esc(r.name)}</h3><div class="sub">Put ${n} unscheduled job${n===1?"":"s"} onto a day</div>
+    <label>Day</label><input id="rSchDate" type="date" value="${TODAY()}">
+    <div class="preview">Each job then repeats on its own frequency from this date. Already-scheduled jobs aren't touched.</div>
+    <div class="acts">
+      <button class="btn primary" onclick="doScheduleRound('${id}',true)">Add to today</button>
+      <button class="btn" onclick="doScheduleRound('${id}',false)">Use chosen day</button>
+    </div>`);
+}
+function doScheduleRound(id,useToday){
+  const target=useToday?TODAY():($("rSchDate").value||TODAY());
+  snap();
+  jobsInRound(id).filter(j=>isActive(j)&&j.weeks>0&&!j.next).forEach(j=>{ j.next=target; j.anchor=null; });
+  UI.todayOrder=null;
+  closeSheet(); save(); render(); go('today');
+  toast((S.rounds.find(r=>r.id===id)||{}).name+" scheduled for "+uk(target),"Undo",undo);
+}
+function renameRound(id){
+  const name=($("rName").value||"").trim(); const r=S.rounds.find(x=>x.id===id); if(!r||!name||name===r.name){ closeSheet(); return; }
+  if(roundByName(name)){ toast("A round with that name already exists"); return; }
+  snap(); r.name=name; closeSheet(); save(); render(); toast("Renamed to "+name,"Undo",undo);
+}
+function deleteRoundSheet(id){
+  const r=S.rounds.find(x=>x.id===id); const js=jobsInRound(id);
+  if(!js.length){
+    sheet(`<h3>Delete ${esc(r.name)}?</h3><div class="sub">This round has no jobs.</div>
+      <div class="acts"><button class="btn danger" onclick="doDeleteRound('${id}','')">Delete</button><button class="btn ghost" onclick="closeSheet()">Cancel</button></div>`);
+    return;
+  }
+  const others=roundsSorted().filter(x=>x.id!==id);
+  if(!others.length){ toast("Create another round first, to move these jobs into"); return; }
+  sheet(`<h3>Delete ${esc(r.name)}?</h3><div class="sub">${js.length} jobs need a new round first.</div>
+    <label>Move those jobs to</label>
+    <select id="reassignRound">${others.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join("")}</select>
+    <div class="acts"><button class="btn danger" onclick="doDeleteRound('${id}',$('reassignRound').value)">Move jobs and delete round</button>
+      <button class="btn ghost" onclick="closeSheet()">Cancel</button></div>`);
+}
+function doDeleteRound(id,reassignId){
+  snap();
+  if(reassignId){ S.jobs.forEach(j=>{ if(j.roundId===id) j.roundId=reassignId; }); resequence(S.jobs); }
+  S.rounds=S.rounds.filter(x=>x.id!==id);
+  closeSheet(); save(); render(); toast("Round deleted","Undo",undo);
+}
+function moveSeq(id,dir){
+  const j=S.jobs.find(x=>x.id===id);
+  const js=activeJobs().filter(x=>x.roundId===j.roundId).sort((a,b)=>a.seq-b.seq);
+  const i=js.indexOf(j), k=i+dir; if(k<0||k>=js.length) return;
+  snap(); const t=js[k].seq; js[k].seq=j.seq; j.seq=t;
+  save(); roundSheet(j.roundId); pgSchedule();
+}
+function daySheet(d){
+  const map=projection(UI.window); let js=(map[d]||[]).slice();
+  const order=S.dayOrders&&S.dayOrders[d];
+  if(order) js.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
+  const byRound={}; js.forEach(j=>{ (byRound[j.roundId]=byRound[j.roundId]||[]).push(j); });
+  sheet(`<h3>${shortD(d)}</h3><div class="sub">${js.length} jobs · ${fmt(js.reduce((s,j)=>s+j.price,0))} · ${Math.round(js.reduce((s,j)=>s+j.mins,0)/6)/10} hrs</div>
+    ${Object.keys(byRound).map(rid=>{
+      const rjs=byRound[rid], onDay=rjs.filter(j=>j.next===d).length, rname=roundName(rjs[0]);
+      return `<div class="sect"><span onclick="roundSheet('${rid}')" style="cursor:pointer">${esc(rname)} ›</span>
+        ${onDay?`<button class="btn ghost" style="padding:3px 10px;font-size:11px" onclick="moveSheet('round','${rid}','${d}')">Move round</button>`:""}</div>
+      <div class="list" style="background:rgba(255,255,255,.05);border:1px solid var(--edge)">
+      ${rjs.map((j,i)=>`<div class="item">
+        <div class="grow" onclick="jobSheet('${j.id}')"><b>${j.seq}. ${esc(j.addr)}</b>
+          <span>${j.next===d?freqLabel(j.weeks):"projected · next "+uk(j.next)}</span></div>
+        <div class="num">${fmt(j.price)}</div>
+        <div class="cardtools">
+          <button ${i===0?"disabled":""} onclick="moveDayOrder('${d}','${j.id}',-1)">↑</button>
+          <button ${i===rjs.length-1?"disabled":""} onclick="moveDayOrder('${d}','${j.id}',1)">↓</button>
+          ${j.next===d?`<button onclick="moveSheet('job','${j.id}')">⤓</button>`:""}
+        </div>
+      </div>`).join("")}</div>`;
+    }).join("")}
+    <div class="preview" style="margin-top:12px">Tap a round name to edit it. ⤓ moves a job; "Move round" shifts everyone due that day together. ↑↓ reorders within the day.</div>`);
+}
+function moveDayOrder(d,id,dir){
+  const map=projection(UI.window); let js=(map[d]||[]).slice();
+  let order=(S.dayOrders&&S.dayOrders[d])?S.dayOrders[d].slice():js.map(j=>j.id);
+  js.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
+  const i=js.findIndex(j=>j.id===id), k=i+dir; if(i<0||k<0||k>=js.length) return;
+  [js[i],js[k]]=[js[k],js[i]];
+  S.dayOrders=S.dayOrders||{}; S.dayOrders[d]=js.map(j=>j.id);
+  save(); daySheet(d);
+}
+function moveSheet(kind,id,fromDate){
+  const isJob=kind==="job";
+  const j=isJob?S.jobs.find(x=>x.id===id):null;
+  const cur=isJob?j.next:fromDate;
+  const title=isJob?nameOf(j):((S.rounds.find(r=>r.id===id)||{}).name||"round");
+  const n=isJob?1:activeJobs().filter(x=>x.roundId===id&&x.next===fromDate).length;
+  sheet(`<h3>Move ${esc(title)}</h3><div class="sub">${isJob?"Currently due "+uk(cur):n+" jobs due "+uk(cur)}</div>
+    <label>New date</label><input id="mvDate" type="date" value="${addD(cur||TODAY(),1)}">
+    <div class="preview"><b>Keep rhythm</b> — this visit moves, but their normal cycle carries on from the original date.<br><b>Shift schedule</b> — everything shifts, so the new date becomes their cycle going forward.</div>
+    <div class="acts">
+      <button class="btn primary" onclick="doMove('${kind}','${id}','${cur}',true)">Keep rhythm</button>
+      <button class="btn" onclick="doMove('${kind}','${id}','${cur}',false)">Shift schedule</button>
+    </div>`);
+}
+function doMove(kind,id,cur,keep){
+  const target=$("mvDate").value; if(!target){ toast("Pick a date"); return; }
+  snap();
+  const apply=j=>{ if(j.weeks>0){ if(keep && j.next) j.anchor=j.next; else j.anchor=null; } j.next=target; };
+  if(kind==="job"){ const j=S.jobs.find(x=>x.id===id); if(j) apply(j); }
+  else { activeJobs().filter(j=>j.roundId===id&&j.next===cur).forEach(apply); }
+  save(); render(); closeSheet(); toast("Moved to "+uk(target),"Undo",undo);
+}
+function endOfDay(){
+  const done=doneToday();
+  const paid=done.reduce((s,j)=>s+j.hist.filter(h=>h.d===TODAY()&&h.t==="payment").reduce((a,b)=>a+b.a,0),0);
+  const charged=done.reduce((s,j)=>s+j.hist.filter(h=>h.d===TODAY()&&h.t==="charge").reduce((a,b)=>a+b.a,0),0);
+  const added=Math.max(0,charged-paid);
+  const skipped=S.jobs.filter(j=>j.hist.some(h=>h.d===TODAY()&&h.t==="skip")).length;
+  const txt=[`${S.settings.biz} — ${uk(TODAY())}`,`Jobs done: ${done.length}`,`Collected: ${fmt(paid)}`,
+    `Added to debts: ${fmt(added)}`,`Skipped: ${skipped}`,`Still owed overall: ${fmt(totalOwed())}`].join("\n");
+  sheet(`<h3>End of day</h3><div class="sub">${uk(TODAY())}</div>
+    <div class="kv"><span>Jobs done</span><b>${done.length}</b></div>
+    <div class="kv"><span>Collected</span><b style="color:var(--clean)">${fmt(paid)}</b></div>
+    <div class="kv"><span>Added to debts</span><b style="color:var(--suds)">${fmt(added)}</b></div>
+    <div class="kv"><span>Skipped</span><b>${skipped}</b></div>
+    <div class="kv"><span>Owed overall</span><b>${fmt(totalOwed())}</b></div>
+    <button class="btn primary" style="width:100%;margin-top:14px" onclick='copyText(${JSON.stringify(txt)})'>Copy as text</button>`);
+}
+function copyText(t){
+  const done=()=>toast("Copied to clipboard");
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,()=>fallback());
+  else fallback();
+  function fallback(){ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select();
+    try{document.execCommand("copy");done();}catch(e){toast("Couldn't copy — select the text instead");} a.remove(); }
+}
+
+/* ================= WEATHER (Deal, Kent — the only network call, degrades silently) ================= */
+const WEATHER_CACHE_MS=45*60*1000;
+async function fetchWeather(){
+  if(!S.settings.weatherOn) return;
+  const cache=S.weather;
+  if(cache && cache.at && (Date.now()-cache.at)<WEATHER_CACHE_MS){ applyWeatherClass(cache.code,cache.isDay); return; }
+  try{
+    const res=await fetch("https://api.open-meteo.com/v1/forecast?latitude=51.2226&longitude=1.4012&current=weather_code,is_day");
+    if(!res.ok) throw new Error("bad response");
+    const data=await res.json();
+    const code=data.current.weather_code, isDay=data.current.is_day;
+    S.weather={code,isDay,at:Date.now()};
+    save();
+    applyWeatherClass(code,isDay);
+  }catch(e){
+    if(cache) applyWeatherClass(cache.code,cache.isDay);
+  }
+}
+function weatherClassFor(code,isDay){
+  let base="clear";
+  if(code===0||code===1) base="clear";
+  else if(code===2||code===3) base="cloudy";
+  else if([45,48].includes(code)) base="fog";
+  else if(code>=51&&code<=67) base="rain";
+  else if(code>=71&&code<=77) base="snow";
+  else if(code>=80&&code<=82) base="rain";
+  else if(code>=95) base="storm";
+  return "wx-"+base+"-"+(isDay?"day":"night");
+}
+function applyWeatherClass(code,isDay){
+  const app=$("app"); if(!app) return;
+  app.className=app.className.replace(/\bwx-\S+/g,"").trim();
+  if(!S.settings.weatherOn||code==null) return;
+  app.classList.add(weatherClassFor(code,isDay));
+  const rainEl=$("rain");
+  if(rainEl) rainEl.style.display=(code>=51&&code<=82)?"":"none";
+}
+function toggleWeather(){
+  S.settings.weatherOn=!S.settings.weatherOn; save(); openSettings("data");
+  if(S.settings.weatherOn) fetchWeather(); else applyWeatherClass(null);
+}
+
+/* ================= SETTINGS / DATA ================= */
+function openSettings(focus){
+  const s=S.settings;
+  sheet(`<h3>Settings</h3><div class="sub">${esc(s.biz)} · ${esc(s.owner)}</div>
+    <label>Business name</label><input id="s_biz" value="${esc(s.biz)}">
+    <label>Payment details (used in texts)</label><textarea id="s_pay" rows="2">${esc(s.payDetails)}</textarea>
+    <div class="two"><div><label>Default minutes per job</label><input id="s_mins" type="number" value="${s.mins}"></div>
+      <div><label>Add a frequency (weeks)</label><input id="s_freq" type="number" placeholder="e.g. 12"></div></div>
+    <div style="margin:-4px 0 12px">${s.freqs.map(w=>`<span class="chip">${freqLabel(w)}</span> `).join("")}
+      <button class="btn ghost" style="padding:4px 10px;font-size:12px" onclick="addFreq()">Add</button></div>
+
+    <div class="sect">Background</div>
+    <div class="kv"><span>Theme the background on Deal's weather</span>
+      <b><button class="tick ${s.weatherOn?"on":""}" onclick="toggleWeather()" aria-label="Toggle weather theming">${s.weatherOn?"✓":""}</button></b></div>
+
+    <div class="sect" id="msg">Message templates</div>
+    <label>On my way</label><textarea id="t_onway" rows="2">${esc(s.tpl.onway)}</textarea>
+    <label>Windows done</label><textarea id="t_done" rows="2">${esc(s.tpl.done)}</textarea>
+    <label>Debt chaser</label><textarea id="t_chase" rows="2">${esc(s.tpl.chase)}</textarea>
+    <label>Tomorrow's reminder</label><textarea id="t_remind" rows="2">${esc(s.tpl.remind)}</textarea>
+    <div class="preview">Fields: {name} {address} {price} {balance} {date} {biz} {pay}</div>
+    <button class="btn primary" style="width:100%" onclick="saveSettings()">Save settings</button>
+
+    <div class="sect" id="data">Data & backup</div>
+    <div class="kv"><span>Storage</span><b>${Store.mode}</b></div>
+    <div class="kv"><span>Jobs</span><b>${S.jobs.length}</b></div>
+    <div class="kv"><span>Rounds</span><b>${S.rounds.length}</b></div>
+    <div class="kv"><span>Last backup</span><b>${S.meta.lastExport?uk(S.meta.lastExport.slice(0,10)):"never"}</b></div>
+    <div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22);margin-top:10px">This phone's storage is a <b>cache, not a vault</b> — it can be cleared after a week of not opening Gleam. Add Gleam to your <b>Home Screen</b> (Share → Add to Home Screen) on both the Pixel and the iPhone so it runs standalone and storage sticks, and back up to a JSON file regularly.</div>
+    <div class="acts" style="margin-top:12px">
+      <button class="btn primary" onclick="exportJSON()">Backup JSON now</button>
+      <button class="btn" onclick="exportCSV()">Export CSV</button>
+    </div>
+    <div class="acts" style="margin-top:8px">
+      <button class="btn" onclick="$('impCSV').click()">Import CSV</button>
+      <button class="btn" onclick="$('impJSON').click()">Restore JSON</button>
+    </div>
+    <input type="file" id="impCSV" accept=".csv,text/csv" style="display:none" onchange="importCSV(this)">
+    <input type="file" id="impJSON" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
+    <div class="preview" style="margin-top:12px">CSV import matches on Aworka Job ID and merges — it never creates a duplicate or wipes your history.</div>
+    <div class="acts" style="margin-top:10px"><button class="btn danger" onclick="resetAll()">Reset to the original import</button></div>`);
+  if(focus) setTimeout(()=>{ const el=$(focus); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },350);
+}
+function saveSettings(){
+  const s=S.settings;
+  s.biz=$("s_biz").value.trim()||s.biz;
+  s.payDetails=$("s_pay").value;
+  s.mins=+$("s_mins").value||30;
+  ["onway","done","chase","remind"].forEach(k=>s.tpl[k]=$("t_"+k).value);
+  closeSheet(); save(); render(); toast("Settings saved");
+}
+function addFreq(){
+  const w=+$("s_freq").value;
+  if(!w||w<1||S.settings.freqs.includes(w)){ toast("Enter a new number of weeks"); return; }
+  S.settings.freqs=[...S.settings.freqs.filter(x=>x),w,0].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a-b);
+  save(); openSettings(); toast(w+" weekly added");
+}
+function toggleOutdoor(){
+  S.settings.outdoor=!S.settings.outdoor;
+  document.body.classList.toggle("outdoor",S.settings.outdoor);
+  $("sunBtn").textContent=S.settings.outdoor?"🌙":"☀";
+  save(); toast(S.settings.outdoor?"Outdoor mode on":"Outdoor mode off");
+}
+function resetAll(){
+  sheet(`<h3>Reset everything?</h3><div class="sub">Back to the original Aworka import. All edits, payments and history go.</div>
+    <div class="acts"><button class="btn danger" onclick="doReset()">Yes, reset</button>
+      <button class="btn ghost" onclick="closeSheet()">Cancel</button></div>`);
+}
+async function doReset(){ S=seed(); await Store.set(S); closeSheet(); render(); toast("Reset to the original import"); }
+
+/* ---- CSV ---- */
+function parseCSV(text){
+  const rows=[]; let f="",row=[],q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===","){ row.push(f); f=""; }
+    else if(c==="\n"){ row.push(f); rows.push(row); row=[]; f=""; }
+    else if(c!=="\r") f+=c;
+  }
+  if(f.length||row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r=>r.some(c=>c.trim()!==""));
+}
+function importCSV(input){
+  const file=input.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    let added=0,updated=0,unchanged=0,skipped=0;
+    try{
+      const rows=parseCSV(r.result);
+      const head=rows.shift().map(h=>h.trim());
+      const c=n=>head.indexOf(n);
+      const iId=c("Aworka Job ID");
+      if(iId<0){ toast("That doesn't look like an Aworka export"); return; }
+      snap();
+      rows.forEach(row=>{
+        const jid=+row[iId]; if(!jid){ skipped++; return; }
+        const g=n=>{ const i=c(n); return i<0?"":String(row[i]||"").trim(); };
+        const freqTxt=g("Frequency");
+        const m=freqTxt.match(/(\d+)\s*weekly/i);
+        const weeks=m?+m[1]:0;
+        const balRaw=parseFloat(g("Balance"))||0;
+        const openingBal=-balRaw; // Aworka convention: negative = owes
+        const roundNameRaw=(g("Round")||"Unassigned").replace(/^Ben\s+/,"");
+        const roundId=ensureRound(roundNameRaw).id;
+        const inc={
+          name:g("Customer Name"), addr:g("Job Address")||g("Customer Address"),
+          pc:g("Job Postcode")||g("Customer Postcode"),
+          ph:g("Customer Phone 1")||g("Customer Phone 2")||g("Job Phone 1"),
+          email:g("Customer Email"), roundId,
+          seq:+g("Seq Round Index")||99, price:parseFloat(g("Price"))||0, weeks,
+          next:g("Next Due"), last:g("Last Done/Skipped"),
+          bd:g("Balance Date"), ps:g("Price Since"), notes:g("Notes")||g("Customer Notes"),
+          status:(g("Status")||"Active").toLowerCase()==="active"?"active":"archived"
+        };
+        if(!inc.addr){ skipped++; return; }
+        const ex=S.jobs.find(j=>j.jid===jid);
+        if(!ex){
+          const nj={id:"j"+jid,jid,ph2:"",pay:"Cash",mins:S.settings.mins,hist:[],...inc,bal:0};
+          if(openingBal) nj.hist.push({id:"h"+jid,d:nj.bd||TODAY(),t:"opening",a:openingBal,n:"Opening balance (CSV import)"});
+          recalcBal(nj); nj.bd=nj.bal>0?(nj.bd||TODAY()):"";
+          S.jobs.push(nj);
+          added++;
+        }else{
+          let changed=false;
+          ["seq","price","weeks"].forEach(k=>{ if(+ex[k]!==+inc[k]){ ex[k]=inc[k]; changed=true; } });
+          ["name","addr","pc","ph","email","notes","status"].forEach(k=>{
+            if(inc[k] && String(ex[k]||"")!==String(inc[k])){ ex[k]=inc[k]; changed=true; }
+          });
+          if(inc.next && ex.next!==inc.next){ ex.next=inc.next; changed=true; }
+          if(inc.last && ex.last!==inc.last){ ex.last=inc.last; changed=true; }
+          if(ex.roundId!==roundId){ ex.roundId=roundId; changed=true; }
+          const delta=Math.round((openingBal-ex.bal)*100)/100;
+          if(delta!==0){ log(ex,"adjustment",delta,"CSV import adjustment"); recalcBal(ex); ex.bd=ex.bal>0?TODAY():""; changed=true; }
+          changed?updated++:unchanged++;
+        }
+      });
+      resequenceMissing();
+      save(); render();
+      sheet(`<h3>Import finished</h3><div class="sub">${file.name}</div>
+        <div class="kv"><span>Added</span><b style="color:var(--clean)">${added}</b></div>
+        <div class="kv"><span>Updated</span><b style="color:var(--aqua)">${updated}</b></div>
+        <div class="kv"><span>Unchanged</span><b>${unchanged}</b></div>
+        <div class="kv"><span>Skipped (no ID or address)</span><b>${skipped}</b></div>
+        <div class="preview" style="margin-top:14px">${added+updated===0?"No changes — every row already matched what's in Gleam.":"History and payments were kept for every existing job."}</div>
+        <div class="acts"><button class="btn primary" onclick="closeSheet()">Done</button>
+          <button class="btn ghost" onclick="undo();closeSheet()">Undo import</button></div>`);
+    }catch(e){
+      toast("Couldn't read that file — is it the Aworka CSV?");
+    }
+    input.value="";
+  };
+  r.readAsText(file);
+}
+function resequenceMissing(){
+  const by={};
+  S.jobs.forEach(j=>{ if(!j.seq||j.seq===99){ by[j.roundId]=(by[j.roundId]||activeJobs().filter(x=>x.roundId===j.roundId).length); j.seq=++by[j.roundId]; } });
+}
+function exportCSV(){
+  const cols=CSV_HEAD.split(",");
+  const q=v=>{ v=String(v==null?"":v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const lines=[CSV_HEAD];
+  S.jobs.forEach(j=>{
+    const m={"Customer Name":j.name,"Customer Address":j.addr,"Customer Postcode":j.pc,"Customer Phone 1":j.ph,
+      "Customer Phone 2":j.ph2,"Customer Email":j.email,"Payment Method":j.pay,"Balance":j.bal?-j.bal:"",
+      "Balance Date":j.bd,"User":S.settings.owner,"Round":roundName(j),"Seq Round Index":j.seq,"Job Address":j.addr,
+      "Job Postcode":j.pc,"Notes":j.notes,"Price":j.price?j.price.toFixed(2):"","Frequency":j.weeks?j.weeks+" weekly":"On Request",
+      "Time Required":String(Math.floor(j.mins/60)).padStart(2,"0")+":"+String(j.mins%60).padStart(2,"0"),
+      "Status":j.status==="active"?"Active":"Inactive","Last Done/Skipped":j.last,"Next Due":j.next,
+      "Price Since":j.ps,"Aworka Job ID":j.jid||""};
+    lines.push(cols.map(c=>q(m[c]!==undefined?m[c]:"")).join(","));
+  });
+  download(lines.join("\n"),"gleam-export-"+TODAY()+".csv","text/csv");
+  markExported();
+}
+function exportJSON(){
+  download(JSON.stringify(S,null,1),"gleam-backup-"+TODAY()+".json","application/json");
+  markExported();
+}
+function markExported(){ S.meta.lastExport=new Date().toISOString(); save(); render(); toast("Backed up"); }
+function importJSON(input){
+  const file=input.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const v=JSON.parse(r.result);
+      if(!v.jobs||!Array.isArray(v.jobs)) throw new Error("bad");
+      snap();
+      S=migrateState(v);
+      save(); closeSheet(); render();
+      document.body.classList.toggle("outdoor",!!S.settings.outdoor);
+      toast("Restored "+S.jobs.length+" jobs");
+    }catch(e){ toast("That file isn't a Gleam backup"); }
+    input.value="";
+  };
+  r.readAsText(file);
+}
+function download(text,name,type){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type}));
+  a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+
+/* ================= CHROME ================= */
+function sheet(html){
+  $("sheet").innerHTML=`<div class="grabber" aria-hidden="true"></div><button class="sheetclose" onclick="closeSheet()" aria-label="Close">✕</button>${html}`;
+  $("sheet").style.transform=""; $("sheet").scrollTop=0;
+  $("sheet").classList.add("on"); $("scrim").classList.add("on");
+}
+function closeSheet(){ $("sheet").classList.remove("on"); $("scrim").classList.remove("on"); $("sheet").style.transform=""; }
+function setupSheetSwipe(){
+  const sh=$("sheet");
+  let startY=null, dragging=false;
+  const interactive=el=>!!(el&&el.closest&&el.closest("input,select,textarea,button,a,.list,.seg,.txttype,.two"));
+  sh.addEventListener("pointerdown",e=>{
+    // only begin a dismiss-drag from the very top grab zone of the sheet, and never on a control
+    if(sh.scrollTop>2) return;
+    if(interactive(e.target)) return;
+    const rect=sh.getBoundingClientRect();
+    if(e.clientY-rect.top>72) return;           // grab handle area only
+    startY=e.clientY; dragging=true; sh.style.transition="none";
+  });
+  sh.addEventListener("pointermove",e=>{
+    if(!dragging||startY==null) return;
+    const dy=e.clientY-startY;
+    if(dy>0){ sh.style.transform="translateY("+dy+"px)"; e.preventDefault(); }
+  });
+  function end(e){
+    if(!dragging) return;
+    dragging=false; sh.style.transition="";
+    const dy=(e.clientY!=null?e.clientY:startY)-startY;
+    if(dy>90) closeSheet(); else sh.style.transform="";
+    startY=null;
+  }
+  sh.addEventListener("pointerup",end);
+  sh.addEventListener("pointercancel",end);
+}
+let toastT;
+function toast(msg,action,fn){
+  $("toastMsg").textContent=msg;
+  const b=$("toastAct"); b.textContent=action||""; b.style.display=action?"block":"none";
+  b.onclick=()=>{ if(fn) fn(); $("toast").classList.remove("on"); };
+  $("toast").classList.add("on"); clearTimeout(toastT);
+  toastT=setTimeout(()=>$("toast").classList.remove("on"),3600);
+}
+function go(p){ document.querySelector('.tab[data-p="'+p+'"]').click(); }
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on")); t.classList.add("on");
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
+  const p=$("p-"+t.dataset.p); p.classList.add("on"); p.style.animation="none"; p.offsetHeight; p.style.animation="";
+  $("main").scrollTop=0;
+});
+(function rain(){ const r=$("rain"); for(let i=0;i<14;i++){ const d=document.createElement("div"); d.className="drop";
+  d.style.left=Math.random()*100+"%"; d.style.animationDuration=(1.6+Math.random()*2.6)+"s";
+  d.style.animationDelay=(Math.random()*4)+"s"; d.style.opacity=.2+Math.random()*.6; r.appendChild(d); } })();
+
+/* manifest for add-to-home-screen */
+try{
+  const man={name:"Gleam Window Cleaning",short_name:"Gleam",display:"standalone",background_color:"#04141f",
+    theme_color:"#07293c",start_url:".",icons:[{src:document.querySelector('link[rel="apple-touch-icon"]').href,sizes:"180x180",type:"image/svg+xml"}]};
+  const l=document.createElement("link"); l.rel="manifest";
+  l.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:"application/json"}));
+  document.head.appendChild(l);
+}catch(e){}
+
+/* boot */
+(async function boot(){
+  await Store.init();
+  const stored=await Store.get();
+  S=stored&&stored.jobs&&stored.jobs.length?migrateState(stored):seed();
+  if(!S.settings) S.settings=JSON.parse(JSON.stringify(DEFAULTS.settings));
+  if(!S.meta) S.meta={...DEFAULTS.meta};
+  if(S.settings.weatherOn===undefined) S.settings.weatherOn=true;
+  if(S.settings.compactToday===undefined) S.settings.compactToday=false;
+  S.settings.freqs=S.settings.freqs||[4,5,8,0];
+  Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!S.settings.tpl[k]) S.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
+  if(!S.rounds) S.rounds=[];
+  if(!S.dayOrders) S.dayOrders={};
+  recalcAll();
+  document.body.classList.toggle("outdoor",!!S.settings.outdoor);
+  $("sunBtn").textContent=S.settings.outdoor?"🌙":"☀";
+  $("bizname").textContent=S.settings.owner;
+  render();
+  setupSheetSwipe();
+  if(S.settings.weatherOn) fetchWeather();
+  if(!stored) save();
+})();
+
+</script>
+</body>
+</html>
