@@ -40,7 +40,7 @@ class GleamWidgetProvider : AppWidgetProvider() {
                 if (snapshot.todayCount == 1) "1 left" else "${snapshot.todayCount} left"
             )
 
-            val a = snapshot.todayAddresses
+            val a = snapshot.todayJobs.map { it.address }
             views.setTextViewText(
                 R.id.widget_next1,
                 a.getOrNull(0) ?: if (snapshot.leftBehind > 0) {
