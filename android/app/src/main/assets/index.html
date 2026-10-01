@@ -553,6 +553,45 @@ nav{
   .card.cleaning::before{display:none}
 }
 
+/* ===== Gleam 2 alpha 2 interaction polish ===== */
+nav,.fab{transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s ease}
+body.nav-hidden nav{transform:translateY(calc(100% + 26px));opacity:0;pointer-events:none}
+body.nav-hidden .fab{transform:translateY(84px);opacity:0;pointer-events:none}
+.viewtoggle{flex:0 0 auto;padding:8px 11px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:var(--dim);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer}
+.compactacts{flex:0 0 auto;display:flex;align-items:center}
+.compactacts .iconbtn{width:34px;height:34px;color:var(--clean);border-color:rgba(95,227,176,.36)}
+.settingsnote{display:inline-block;margin:0 0 15px;padding:5px 9px;border-radius:999px;background:rgba(95,227,176,.08);border:1px solid rgba(95,227,176,.18);color:var(--clean);font-size:10px;letter-spacing:.04em}
+.settingsgroup{margin:10px 0;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.035);overflow:hidden}
+.settingsgroup summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;cursor:pointer;font-size:13.5px;font-weight:600}
+.settingsgroup summary::-webkit-details-marker{display:none}
+.settingsgroup summary::after{content:'›';font-size:20px;color:var(--faint);transition:transform .18s}
+.settingsgroup[open] summary::after{transform:rotate(90deg)}
+.settingsgroup summary span{flex:1}
+.settingsgroup summary b{font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.settingbody{padding:2px 14px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.switchrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);text-transform:none;letter-spacing:0;color:var(--text)}
+.switchrow span{min-width:0;flex:1}.switchrow b{display:block;font-size:13px;font-weight:600}.switchrow small{display:block;color:var(--dim);font-size:11px;margin-top:2px;line-height:1.35}
+.switchrow input[type=checkbox]{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--aqua)}
+.settingline{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:10px}.settingline .switchrow{border-bottom:0}
+.timepick{margin:0!important;padding:8px 7px!important;font-size:12px!important;text-align:center}
+.widgetchoice{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.widgetchoice:last-of-type{border-bottom:0}.widgetchoice>div{flex:1;min-width:0}.widgetchoice b{display:block;font-size:13px}.widgetchoice small{display:block;color:var(--dim);font-size:11px;margin-top:2px;line-height:1.35}.widgetchoice .btn{flex:0 0 auto;padding:8px 13px;margin:0}
+.grabber{top:0;left:0;transform:none;width:100%;height:34px;border-radius:0;background:transparent;z-index:5;pointer-events:auto;touch-action:none;cursor:grab}
+.grabber::after{content:'';position:absolute;top:9px;left:50%;transform:translateX(-50%);width:44px;height:5px;border-radius:5px;background:rgba(255,255,255,.32)}
+.grabber:active{cursor:grabbing}
+.waterfx{position:absolute;inset:0;z-index:4;overflow:hidden;pointer-events:none;opacity:0;border-radius:inherit;background:linear-gradient(100deg,rgba(180,239,248,.02),rgba(180,239,248,.17),rgba(180,239,248,.04))}
+.waterfx i{position:absolute;top:-18px;width:7px;height:14px;border-radius:55% 55% 68% 68%;background:linear-gradient(180deg,rgba(230,253,255,.92),rgba(105,214,223,.45));box-shadow:0 0 8px rgba(180,244,255,.32)}
+.waterfx i:nth-child(1){left:9%;animation-delay:.02s}.waterfx i:nth-child(2){left:21%;width:5px;height:11px;animation-delay:.11s}.waterfx i:nth-child(3){left:34%;width:9px;height:17px;animation-delay:.05s}.waterfx i:nth-child(4){left:49%;width:6px;height:13px;animation-delay:.16s}.waterfx i:nth-child(5){left:61%;width:8px;height:16px;animation-delay:.08s}.waterfx i:nth-child(6){left:73%;width:5px;height:10px;animation-delay:.20s}.waterfx i:nth-child(7){left:84%;width:8px;height:15px;animation-delay:.12s}.waterfx i:nth-child(8){left:93%;width:5px;height:12px;animation-delay:.04s}
+.card.cleaning .waterfx,.citem.cleaning .waterfx{opacity:1;animation:wetFlash .72s ease-out forwards}
+.card.cleaning .waterfx i,.citem.cleaning .waterfx i{animation-name:waterDrop;animation-duration:.62s;animation-timing-function:cubic-bezier(.2,.7,.2,1);animation-fill-mode:forwards}
+.card.cleaning .grime,.citem.cleaning .grime{opacity:1;animation:wipeaway .72s cubic-bezier(.5,0,.2,1) forwards;z-index:3}
+.card.cleaning .blade,.citem.cleaning .blade{opacity:1;animation:swipe .72s cubic-bezier(.5,0,.2,1) forwards;z-index:5}
+.citem .grime,.citem .blade,.citem .waterfx{border-radius:inherit}.citem.cleaning{animation:compactClean .72s ease forwards}
+@keyframes waterDrop{0%{transform:translateY(-8px) scale(.7);opacity:0}18%{opacity:1}70%{opacity:.92}100%{transform:translateY(105px) scale(1);opacity:0}}
+@keyframes wetFlash{0%{opacity:0}18%{opacity:1}78%{opacity:.85}100%{opacity:0}}
+@keyframes compactClean{62%{border-color:rgba(105,214,223,.65)}100%{transform:translateX(14px) scale(.98);opacity:0;height:0;padding-top:0;padding-bottom:0;margin-bottom:0}}
+@media (prefers-reduced-motion:reduce){.waterfx{display:none!important}}
+
 </style>
 </head>
 <body>
