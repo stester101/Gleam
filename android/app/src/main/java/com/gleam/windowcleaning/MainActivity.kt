@@ -14,6 +14,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import org.json.JSONObject
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -71,6 +72,11 @@ class MainActivity : ComponentActivity() {
                     request: WebResourceRequest
                 ): WebResourceResponse? {
                     return assetLoader.shouldInterceptRequest(request.url)
+                }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    deliverPendingNativeState()
                 }
 
                 override fun shouldOverrideUrlLoading(
@@ -148,6 +154,24 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
+    }
+
+    private fun deliverPendingNativeState() {
+        if (!::webView.isInitialized) return
+        val pending = NativeStateStore.pendingState(this)
+        if (pending.isBlank()) return
+        val encoded = JSONObject.quote(pending)
+        webView.evaluateJavascript(
+            "if(window.receiveNativeState){window.receiveNativeState($encoded);}",
+            null
+        )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::webView.isInitialized) {
+            webView.postDelayed({ deliverPendingNativeState() }, 250)
+        }
     }
 
     fun requestNotificationPermissionIfNeeded() {
