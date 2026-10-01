@@ -1,0 +1,44 @@
+name: Build Gleam 2 APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - gleam-2-native
+    paths:
+      - "android/**"
+      - ".github/workflows/gleam2-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 37 platform
+        run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
+
+      - name: Set up Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Build debug APK
+        run: gradle -p android assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gleam-2-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
