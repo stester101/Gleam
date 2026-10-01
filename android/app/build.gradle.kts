@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.gleam.windowcleaning"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.gleam.windowcleaning"
