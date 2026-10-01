@@ -1432,7 +1432,7 @@ function doSchedule(id,useToday){
 function jobCard(j,spotlight,i,total){
   const picking=selOn("today"), on=selHas(j.id);
   return `<div class="card glass${spotlight&&!picking?" spot":""}${on?" picked":""}" id="c${j.id}" ${holdAttr("today",j.id)}>
-    <div class="grime"></div><div class="blade"></div>
+    <div class="grime"></div><div class="blade"></div><div class="waterfx"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     ${picking?selMark("today",j.id):""}
     <div class="row1" onclick="tapJob('today','${j.id}')">
       <div class="r1l"><div class="addr">${esc(j.addr)}</div>${j.name?`<div class="who">${esc(j.name)}</div>`:""}</div>
@@ -1463,6 +1463,7 @@ function jobCard(j,spotlight,i,total){
 function compactRow(j,spotlight,i,total){
   const picking=selOn("today"), on=selHas(j.id);
   return `<div class="citem${spotlight&&!picking?" spot":""}${on?" picked":""}" id="c${j.id}" ${holdAttr("today",j.id)}>
+    <div class="grime"></div><div class="blade"></div><div class="waterfx"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     ${picking?selMark("today",j.id):""}
     <div class="grow" onclick="tapJob('today','${j.id}')"><b>${esc(j.addr)}</b><span>${esc(roundName(j))} · ${j.price?fmt(j.price):"no price"}${overdue(j)?" · overdue":""}</span></div>
     <div class="acts" id="a${j.id}" style="margin:0;flex:0 0 auto">
