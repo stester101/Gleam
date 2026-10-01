@@ -837,6 +837,7 @@ function save(){
   saveTimer=setTimeout(async()=>{
     S.meta.lastSaved=new Date().toISOString();
     const ok=await Store.set(S);
+    nativeSync();
     savedLine(ok);
   },350);
 }
@@ -2793,6 +2794,7 @@ function importJSON(input){
   r.readAsText(file);
 }
 function download(text,name,type){
+  if(NATIVE){ try{ GleamNative.saveFile(name,type,text); return; }catch(_){} }
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([text],{type}));
   a.download=name; document.body.appendChild(a); a.click();
@@ -2885,6 +2887,7 @@ try{
   $("sunBtn").textContent=S.settings.outdoor?"🌙":"☀";
   $("bizname").textContent=S.settings.owner;
   render();
+  nativeSync();
   setupSheetSwipe();
   if(!stored) save();
 })();
