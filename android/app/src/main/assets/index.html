@@ -1302,6 +1302,11 @@ function pickDay(){
     </div>`);
 }
 function doPickDay(){ const d=$("jumpDate").value; if(!d){ toast("Pick a date"); return; } closeSheet(); setDay(d); }
+function openCalendar(d){
+  const key=d||UI.day||TODAY(), x=dt(key);
+  UI.sched="calendar"; UI.calSel=key; UI.calMonth=x.getMonth(); UI.calYear=x.getFullYear();
+  go("schedule"); pgSchedule();
+}
 
 function pgToday(){
   if(!UI.day) UI.day=TODAY();
@@ -2960,30 +2965,43 @@ function sheet(html){
 function closeSheet(){ $("sheet").classList.remove("on"); $("scrim").classList.remove("on"); $("sheet").style.transform=""; }
 function setupSheetSwipe(){
   const sh=$("sheet");
-  let startY=null, dragging=false;
-  const interactive=el=>!!(el&&el.closest&&el.closest("input,select,textarea,button,a,.list,.seg,.txttype,.two"));
+  let startY=null, dragging=false, pointerId=null;
   sh.addEventListener("pointerdown",e=>{
-    // only begin a dismiss-drag from the very top grab zone of the sheet, and never on a control
-    if(sh.scrollTop>2) return;
-    if(interactive(e.target)) return;
-    const rect=sh.getBoundingClientRect();
-    if(e.clientY-rect.top>72) return;           // grab handle area only
-    startY=e.clientY; dragging=true; sh.style.transition="none";
+    const grip=e.target&&e.target.closest&&e.target.closest(".grabber");
+    if(!grip||sh.scrollTop>2) return;
+    startY=e.clientY; dragging=true; pointerId=e.pointerId;
+    sh.style.transition="none";
+    try{ sh.setPointerCapture(pointerId); }catch(_){}
+    e.preventDefault();
   });
   sh.addEventListener("pointermove",e=>{
-    if(!dragging||startY==null) return;
-    const dy=e.clientY-startY;
-    if(dy>0){ sh.style.transform="translateX(-50%) translateY("+dy+"px)"; e.preventDefault(); }
+    if(!dragging||startY==null||e.pointerId!==pointerId) return;
+    const dy=Math.max(0,e.clientY-startY);
+    sh.style.transform="translateX(-50%) translateY("+dy+"px)";
+    e.preventDefault();
   });
   function end(e){
-    if(!dragging) return;
+    if(!dragging||e.pointerId!==pointerId) return;
+    const dy=Math.max(0,(e.clientY!=null?e.clientY:startY)-startY);
     dragging=false; sh.style.transition="";
-    const dy=(e.clientY!=null?e.clientY:startY)-startY;
-    if(dy>90) closeSheet(); else sh.style.transform="";
+    try{ sh.releasePointerCapture(pointerId); }catch(_){}
+    pointerId=null;
+    if(dy>72) closeSheet(); else sh.style.transform="";
     startY=null;
   }
   sh.addEventListener("pointerup",end);
   sh.addEventListener("pointercancel",end);
+}
+function setupAutoHideNav(){
+  const main=$("main");
+  let last=0;
+  main.addEventListener("scroll",()=>{
+    if($("sheet").classList.contains("on")) return;
+    const y=main.scrollTop, dy=y-last;
+    if(y<28||dy<-7) document.body.classList.remove("nav-hidden");
+    else if(dy>7&&y>72) document.body.classList.add("nav-hidden");
+    last=y;
+  },{passive:true});
 }
 let toastT;
 function toast(msg,action,fn){
@@ -3004,6 +3022,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   const p=$("p-"+target);
   p.classList.add("on");
   p.classList.remove("wipe"); void p.offsetWidth; p.classList.add("wipe");
+  document.body.classList.remove("nav-hidden");
   $("main").scrollTop=0;
 });
 (function rain(){ const r=$("rain"); for(let i=0;i<14;i++){ const d=document.createElement("div"); d.className="drop";
@@ -3040,6 +3059,7 @@ try{
   render();
   nativeSync();
   setupSheetSwipe();
+  setupAutoHideNav();
   if(!stored) save();
 })();
 
