@@ -4,9 +4,15 @@ import android.content.Context
 import org.json.JSONObject
 import java.time.LocalDate
 
+data class SnapshotJob(
+    val id: String,
+    val address: String,
+    val price: Double
+)
+
 data class GleamSnapshot(
     val todayCount: Int = 0,
-    val todayAddresses: List<String> = emptyList(),
+    val todayJobs: List<SnapshotJob> = emptyList(),
     val tomorrowCount: Int = 0,
     val tomorrowRounds: String = "",
     val leftBehind: Int = 0
@@ -31,6 +37,7 @@ object SnapshotStore {
             data class Job(
                 val id: String,
                 val addr: String,
+                val price: Double,
                 val next: String,
                 val roundId: String,
                 val seq: Int,
@@ -43,6 +50,7 @@ object SnapshotStore {
                 parsed += Job(
                     id = j.optString("id"),
                     addr = j.optString("addr").ifBlank { j.optString("name", "Customer") },
+                    price = j.optDouble("price", 0.0),
                     next = j.optString("next"),
                     roundId = j.optString("roundId"),
                     seq = j.optInt("seq", 999),
@@ -81,28 +89,36 @@ object SnapshotStore {
                 it.active && it.next.isNotBlank() && it.next < today
             }
 
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
+            val edit = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putInt("todayCount", todayJobs.size)
-                .putString("today1", todayJobs.getOrNull(0)?.addr.orEmpty())
-                .putString("today2", todayJobs.getOrNull(1)?.addr.orEmpty())
-                .putString("today3", todayJobs.getOrNull(2)?.addr.orEmpty())
                 .putInt("tomorrowCount", tomorrowJobs.size)
                 .putString("tomorrowRounds", tomorrowRounds)
                 .putInt("leftBehind", leftBehind)
-                .apply()
+
+            for (i in 0..2) {
+                val j = todayJobs.getOrNull(i)
+                edit.putString("todayId${i + 1}", j?.id.orEmpty())
+                edit.putString("today${i + 1}", j?.addr.orEmpty())
+                edit.putLong("todayPrice${i + 1}", java.lang.Double.doubleToRawLongBits(j?.price ?: 0.0))
+            }
+            edit.apply()
         }
     }
 
     fun read(context: Context): GleamSnapshot {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val jobs = (1..3).mapNotNull { i ->
+            val id = p.getString("todayId$i", "").orEmpty()
+            val address = p.getString("today$i", "").orEmpty()
+            if (id.isBlank() || address.isBlank()) null else SnapshotJob(
+                id = id,
+                address = address,
+                price = java.lang.Double.longBitsToDouble(p.getLong("todayPrice$i", 0L))
+            )
+        }
         return GleamSnapshot(
             todayCount = p.getInt("todayCount", 0),
-            todayAddresses = listOf(
-                p.getString("today1", "").orEmpty(),
-                p.getString("today2", "").orEmpty(),
-                p.getString("today3", "").orEmpty()
-            ).filter { it.isNotBlank() },
+            todayJobs = jobs,
             tomorrowCount = p.getInt("tomorrowCount", 0),
             tomorrowRounds = p.getString("tomorrowRounds", "").orEmpty(),
             leftBehind = p.getInt("leftBehind", 0)
