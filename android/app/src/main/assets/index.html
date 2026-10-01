@@ -811,7 +811,7 @@ const DEFAULTS={
       remind:"Hi {name}, Ant here from {biz}. I'm cleaning at {address} tomorrow, {date}. {price} due on the day. Reply STOP to skip this one."
     }
   },
-  meta:{lastExport:null,lastSaved:null,nudged:false}
+  meta:{lastExport:null,lastSaved:null,nudged:false,schemaVersion:2}
 };
 
 /* ---- rounds registry ---- */
@@ -954,6 +954,7 @@ function undo(){ if(!UNDO) return; S.jobs=JSON.parse(UNDO.jobs); S.dayOrders=JSO
 function migrateState(v){
   if(!v.settings) v.settings=JSON.parse(JSON.stringify(DEFAULTS.settings));
   if(!v.meta) v.meta={...DEFAULTS.meta};
+  v.meta.schemaVersion=2;
   if(v.rounds && v.jobs.length && v.jobs[0].roundId!==undefined){
     v.jobs.forEach(j=>{ if(!j.hist) j.hist=[]; migrateLedger(j); recalcBal(j); });
     if(!v.dayOrders) v.dayOrders={};
@@ -3042,6 +3043,7 @@ try{
   S=stored&&stored.jobs&&stored.jobs.length?migrateState(stored):seed();
   if(!S.settings) S.settings=JSON.parse(JSON.stringify(DEFAULTS.settings));
   if(!S.meta) S.meta={...DEFAULTS.meta};
+  S.meta.schemaVersion=2;
   if(S.settings.compactToday===undefined) S.settings.compactToday=false;
   if(S.settings.compactCustomers===undefined) S.settings.compactCustomers=false;
   S.settings.freqs=S.settings.freqs||[4,5,8,0];
