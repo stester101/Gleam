@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Gleam²</string>
+    <string name="widget_description">Today’s Gleam workload and next jobs</string>
+</resources>
