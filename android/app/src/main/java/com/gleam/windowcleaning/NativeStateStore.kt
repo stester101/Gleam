@@ -10,19 +10,38 @@ object NativeStateStore {
     private const val PREFS = "gleam_native_state"
     private const val STATE = "state"
     private const val REVISION = "revision"
+    private const val DIRTY = "nativeDirty"
 
-    fun setFromWeb(context: Context, json: String) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
+    fun setFromWeb(context: Context, json: String): Boolean {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (prefs.getBoolean(DIRTY, false)) return false
+        prefs.edit()
             .putString(STATE, json)
             .putLong(REVISION, System.currentTimeMillis())
             .apply()
+        return true
     }
 
     fun state(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(STATE, "")
             .orEmpty()
+
+    fun pendingState(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        return if (prefs.getBoolean(DIRTY, false)) prefs.getString(STATE, "").orEmpty() else ""
+    }
+
+    fun hasPendingNativeChange(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getBoolean(DIRTY, false)
+
+    fun acknowledge(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(DIRTY, false)
+            .apply()
+    }
 
     fun revision(context: Context): Long =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -88,13 +107,14 @@ object NativeStateStore {
             hist.put(entry)
 
             val oldBal = j.optDouble("bal", 0.0)
-            j.put("bal", ((oldBal + price - paidAmount) * 100.0).toInt() / 100.0)
+            j.put("bal", Math.round((oldBal + price - paidAmount) * 100.0) / 100.0)
 
             val updated = root.toString()
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit()
                 .putString(STATE, updated)
                 .putLong(REVISION, System.currentTimeMillis())
+                .putBoolean(DIRTY, true)
                 .apply()
 
             SnapshotStore.updateFromState(context, updated)
