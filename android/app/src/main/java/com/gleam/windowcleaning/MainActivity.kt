@@ -72,6 +72,32 @@ class MainActivity : ComponentActivity() {
                 ): WebResourceResponse? {
                     return assetLoader.shouldInterceptRequest(request.url)
                 }
+
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest
+                ): Boolean {
+                    val uri = request.url
+                    if (uri.scheme == "https" && uri.host == "appassets.androidplatform.net") {
+                        return false
+                    }
+
+                    return when (uri.scheme?.lowercase()) {
+                        "sms", "smsto", "tel", "mailto", "geo" -> {
+                            runCatching {
+                                startActivity(Intent(Intent.ACTION_VIEW, uri))
+                            }
+                            true
+                        }
+                        "http", "https" -> {
+                            runCatching {
+                                startActivity(Intent(Intent.ACTION_VIEW, uri))
+                            }
+                            true
+                        }
+                        else -> false
+                    }
+                }
             }
 
             webChromeClient = object : WebChromeClient() {
