@@ -608,32 +608,96 @@ function nativeStorageNote(){
   if(NATIVE) return "Stored privately inside the Gleam app. Use <b>Backup JSON now</b> whenever you want a portable copy that can also be restored into another Gleam install.";
   return "This phone's storage is a <b>cache, not a vault</b> — it can be cleared after a week of not opening Gleam. Add Gleam to your <b>Home Screen</b> so it runs standalone, and back up to a JSON file regularly.";
 }
-function nativeExtrasHTML(){
+function nativeNotificationSettings(){
+  const d={enabled:false,todayEnabled:true,todayHour:7,todayMinute:0,tomorrowEnabled:true,tomorrowHour:18,tomorrowMinute:0,leftBehindEnabled:true};
+  if(!NATIVE) return d;
+  try{ return {...d,...JSON.parse(GleamNative.notificationSettings())}; }catch(_){ return d; }
+}
+const nativeTime=(h,m)=>String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+function nativeNotificationsHTML(){
   if(!NATIVE) return "";
-  let on=false;
-  try{ on=!!GleamNative.notificationsEnabled(); }catch(_){}
-  return `<div class="native-extra">
-    <div class="sect">App extras</div>
-    <div class="kv"><span>Work reminders</span><b id="nativeNotifState">${on?"On":"Off"}</b></div>
-    <div class="preview">Morning workload, tomorrow's workload, and any jobs left behind. No earnings notifications.</div>
-    <div class="acts">
-      <button class="btn ${on?"":"primary"}" onclick="toggleNativeNotifications()">${on?"Turn reminders off":"Turn reminders on"}</button>
-      <button class="btn" onclick="requestGleamWidget()">Add Today widget</button>
+  const n=nativeNotificationSettings();
+  return `<details class="settingsgroup">
+    <summary><span>Notifications</span><b>${n.enabled?"On":"Off"}</b></summary>
+    <div class="settingbody">
+      <label class="switchrow"><span><b>Work reminders</b><small>Master switch</small></span>
+        <input id="n_master" type="checkbox" ${n.enabled?"checked":""} onchange="saveNativeNotificationSettings()"></label>
+      <div class="settingline">
+        <label class="switchrow"><span><b>Today briefing</b><small>Jobs due and next address</small></span>
+          <input id="n_today" type="checkbox" ${n.todayEnabled?"checked":""} onchange="saveNativeNotificationSettings()"></label>
+        <input id="n_today_time" class="timepick" type="time" value="${nativeTime(n.todayHour,n.todayMinute)}" onchange="saveNativeNotificationSettings()">
+      </div>
+      <div class="settingline">
+        <label class="switchrow"><span><b>Tomorrow briefing</b><small>Tomorrow's workload and rounds</small></span>
+          <input id="n_tomorrow" type="checkbox" ${n.tomorrowEnabled?"checked":""} onchange="saveNativeNotificationSettings()"></label>
+        <input id="n_tomorrow_time" class="timepick" type="time" value="${nativeTime(n.tomorrowHour,n.tomorrowMinute)}" onchange="saveNativeNotificationSettings()">
+      </div>
+      <label class="switchrow"><span><b>Left-behind warning</b><small>Include older unfinished jobs in the morning briefing</small></span>
+        <input id="n_late" type="checkbox" ${n.leftBehindEnabled?"checked":""} onchange="saveNativeNotificationSettings()"></label>
+      <div class="preview">Android may deliver scheduled work reminders a little after the selected time to protect battery life.</div>
     </div>
-  </div>`;
+  </details>`;
 }
-function toggleNativeNotifications(){
+function saveNativeNotificationSettings(){
   if(!NATIVE) return;
-  let next=true;
-  try{ next=!GleamNative.notificationsEnabled(); GleamNative.setNotifications(next); }catch(_){}
-  openSettings();
-  toast(next?"Work reminders on":"Work reminders off");
+  const cur=nativeNotificationSettings();
+  const parts=v=>{
+    const a=(v||"").split(":").map(Number);
+    return {h:Number.isFinite(a[0])?a[0]:0,m:Number.isFinite(a[1])?a[1]:0};
+  };
+  const t=parts($("n_today_time")?.value||nativeTime(cur.todayHour,cur.todayMinute));
+  const tm=parts($("n_tomorrow_time")?.value||nativeTime(cur.tomorrowHour,cur.tomorrowMinute));
+  const n={
+    enabled:$("n_master")?.checked??cur.enabled,
+    todayEnabled:$("n_today")?.checked??cur.todayEnabled,
+    todayHour:t.h,todayMinute:t.m,
+    tomorrowEnabled:$("n_tomorrow")?.checked??cur.tomorrowEnabled,
+    tomorrowHour:tm.h,tomorrowMinute:tm.m,
+    leftBehindEnabled:$("n_late")?.checked??cur.leftBehindEnabled
+  };
+  try{ GleamNative.setNotificationSettings(JSON.stringify(n)); }catch(_){}
+  const sum=$("sheet")?.querySelector(".settingsgroup[open] summary b");
+  if(sum&&$("n_master")) sum.textContent=n.enabled?"On":"Off";
 }
-function requestGleamWidget(){
+function nativeWidgetsHTML(){
+  if(!NATIVE) return "";
+  return `<details class="settingsgroup">
+    <summary><span>Widgets</span><b>3 available</b></summary>
+    <div class="settingbody">
+      <div class="widgetchoice">
+        <div><b>Today</b><small>Jobs left and the next three addresses.</small></div>
+        <button class="btn" onclick="requestGleamWidget('today')">Add</button>
+      </div>
+      <div class="widgetchoice">
+        <div><b>Next job</b><small>A smaller widget with the next address and price.</small></div>
+        <button class="btn" onclick="requestGleamWidget('next')">Add</button>
+      </div>
+      <div class="widgetchoice">
+        <div><b>Quick complete</b><small>Mark the next job Paid or Not paid without opening Gleam.</small></div>
+        <button class="btn primary" onclick="requestGleamWidget('quick')">Add</button>
+      </div>
+      <div class="preview">Quick Complete writes directly into Gleam's native state and syncs back into the app the next time it is opened.</div>
+    </div>
+  </details>`;
+}
+function requestGleamWidget(type){
   if(!NATIVE) return;
-  try{ GleamNative.requestWidget(); }catch(_){}
+  try{ GleamNative.requestWidget(type||"today"); }catch(_){}
 }
-
+async function receiveNativeState(raw){
+  if(!NATIVE||!raw) return;
+  try{
+    const incoming=migrateState(JSON.parse(raw));
+    S=incoming;
+    recalcAll();
+    await Store.set(S);
+    try{ GleamNative.acknowledgeNativeState(); }catch(_){}
+    render();
+    nativeSync();
+    toast("Home-screen update synced");
+  }catch(_){}
+}
+window.receiveNativeState=receiveNativeState;
 /* ============================================================
    SEED DATA — from the Aworka export (Ben's rounds folded in)
    [jobId, name, address, round, price, weeks, nextDue, owed, phone, balanceDate, priceSince]
