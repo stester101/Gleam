@@ -30,11 +30,14 @@ class BriefWorker(
         ) return Result.success()
 
         val snapshot = SnapshotStore.read(applicationContext)
+        val settings = ReminderScheduler.settings(applicationContext)
         val kind = inputData.getString("kind") ?: "morning"
 
         val content = when (kind) {
             "evening" -> {
-                if (snapshot.tomorrowCount <= 0) return Result.success()
+                if (!settings.tomorrowEnabled || snapshot.tomorrowCount <= 0) {
+                    return Result.success()
+                }
                 val title = if (snapshot.tomorrowCount == 1) {
                     "1 job tomorrow"
                 } else {
@@ -44,21 +47,21 @@ class BriefWorker(
                 Triple(title, body, 2202)
             }
             else -> {
-                if (snapshot.todayCount <= 0 && snapshot.leftBehind <= 0) {
-                    return Result.success()
-                }
+                val showToday = settings.todayEnabled && snapshot.todayCount > 0
+                val showLate = settings.leftBehindEnabled && snapshot.leftBehind > 0
+                if (!showToday && !showLate) return Result.success()
 
                 val title = when {
-                    snapshot.todayCount == 1 -> "1 job today"
-                    snapshot.todayCount > 1 -> "${snapshot.todayCount} jobs today"
+                    showToday && snapshot.todayCount == 1 -> "1 job today"
+                    showToday -> "${snapshot.todayCount} jobs today"
                     snapshot.leftBehind == 1 -> "1 job left behind"
                     else -> "${snapshot.leftBehind} jobs left behind"
                 }
 
-                val next = snapshot.todayAddresses.firstOrNull()
+                val next = if (showToday) snapshot.todayJobs.firstOrNull()?.address else null
                 val parts = mutableListOf<String>()
                 if (!next.isNullOrBlank()) parts += "Next: $next"
-                if (snapshot.leftBehind > 0 && snapshot.todayCount > 0) {
+                if (showLate) {
                     parts += if (snapshot.leftBehind == 1) {
                         "1 left behind"
                     } else {
