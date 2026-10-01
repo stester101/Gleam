@@ -703,7 +703,7 @@ const DEFAULTS={
   settings:{
     biz:"Gleam Window Cleaning", owner:"Ant Hardman",
     payDetails:"Bank: 09-01-29 / 12345678 (A Hardman). Cash or card also fine.",
-    mins:30, freqs:[4,5,8,0], outdoor:false, compactToday:false,
+    mins:30, freqs:[4,5,8,0], outdoor:false, compactToday:false, compactCustomers:false,
     tpl:{
       onway:"Hi {name}, Ant here from {biz}. On my way to {address} now — should be with you shortly.",
       done:"Hi {name}, windows done at {address} today. That's {price} please. {pay} Thanks!",
@@ -1223,7 +1223,7 @@ function pgToday(){
       </div>
       <div class="daynav">
         <button onclick="shiftDay(-1)" aria-label="Previous day">‹</button>
-        <button onclick="pickDay()" aria-label="Pick a day">🗓</button>
+        <button onclick="openCalendar('${d}')" aria-label="Open calendar">🗓</button>
         <button onclick="shiftDay(1)" aria-label="Next day">›</button>
       </div>
     </div>
@@ -1249,11 +1249,10 @@ function pgToday(){
     ${picking?selBar("today"):""}
     ${total&&!picking?`<div class="progresshero glass">
       <div class="prog-top">
-        <div><div class="prog-count">${doneEntries.length}<span>/${total}</span></div>${pct===100?`<small>all done — nice one</small>`:""}</div>
+        <div><div class="prog-count">${doneEntries.length}<span>/${total}</span></div>${pct===100?`<small>all done — nice one G</small>`:""}</div>
         <div class="prog-money"><div><b class="clean">${fmt(earned)}</b><span>${isT?"earned":"logged"}</span></div><div><b class="suds">${fmt(remaining)}</b><span>left</span></div></div>
       </div>
       <div class="prog-bar"><i style="width:${pct}%"></i></div>
-      ${roundsToday.length?`<div class="prog-rounds">${roundsToday.map(r=>`<span class="chip round">${esc(r)}</span>`).join("")}</div>`:""}
     </div>`:""}
     ${list.length&&!picking?`<div class="holdhint">Hold a job to pick several at once</div>`:""}
     ${compact
@@ -2878,6 +2877,7 @@ try{
   if(!S.settings) S.settings=JSON.parse(JSON.stringify(DEFAULTS.settings));
   if(!S.meta) S.meta={...DEFAULTS.meta};
   if(S.settings.compactToday===undefined) S.settings.compactToday=false;
+  if(S.settings.compactCustomers===undefined) S.settings.compactCustomers=false;
   S.settings.freqs=S.settings.freqs||[4,5,8,0];
   Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!S.settings.tpl[k]) S.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
   if(!S.rounds) S.rounds=[];
