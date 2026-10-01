@@ -2666,49 +2666,69 @@ function doMove(kind,id,cur,keep){
 function openSettings(focus){
   const s=S.settings;
   sheet(`<h3>Settings</h3><div class="sub">${esc(s.biz)} · ${esc(s.owner)}</div>
-    <label>Business name</label><input id="s_biz" value="${esc(s.biz)}">
-    <label>Payment details (used in texts)</label><textarea id="s_pay" rows="2">${esc(s.payDetails)}</textarea>
-    <div class="two"><div><label>Default minutes per job</label><input id="s_mins" type="number" value="${s.mins}"></div>
+    <div class="settingsnote">Changes save automatically</div>
+    <label>Business name</label><input id="s_biz" value="${esc(s.biz)}" oninput="autosaveSettings()">
+    <label>Payment details (used in texts)</label><textarea id="s_pay" rows="2" oninput="autosaveSettings()">${esc(s.payDetails)}</textarea>
+    <div class="two"><div><label>Default minutes per job</label><input id="s_mins" type="number" value="${s.mins}" oninput="autosaveSettings()"></div>
       <div><label>Add a frequency (weeks)</label><input id="s_freq" type="number" placeholder="e.g. 12"></div></div>
     <div style="margin:-4px 0 12px">${s.freqs.map(w=>`<span class="chip">${freqLabel(w)}</span> `).join("")}
       <button class="btn ghost" style="padding:4px 10px;font-size:12px" onclick="addFreq()">Add</button></div>
 
-    <div class="sect" id="msg">Message templates</div>
-    <label>On my way</label><textarea id="t_onway" rows="2">${esc(s.tpl.onway)}</textarea>
-    <label>Windows done</label><textarea id="t_done" rows="2">${esc(s.tpl.done)}</textarea>
-    <label>Debt chaser</label><textarea id="t_chase" rows="2">${esc(s.tpl.chase)}</textarea>
-    <label>Tomorrow's reminder</label><textarea id="t_remind" rows="2">${esc(s.tpl.remind)}</textarea>
-    <div class="preview">Fields: {name} {address} {price} {balance} {date} {biz} {pay}</div>
-    <button class="btn primary" style="width:100%" onclick="saveSettings()">Save settings</button>
+    <details class="settingsgroup" id="msg">
+      <summary><span>Message templates</span><b>4 templates</b></summary>
+      <div class="settingbody">
+        <label>On my way</label><textarea id="t_onway" rows="2" oninput="autosaveSettings()">${esc(s.tpl.onway)}</textarea>
+        <label>Windows done</label><textarea id="t_done" rows="2" oninput="autosaveSettings()">${esc(s.tpl.done)}</textarea>
+        <label>Debt chaser</label><textarea id="t_chase" rows="2" oninput="autosaveSettings()">${esc(s.tpl.chase)}</textarea>
+        <label>Tomorrow's reminder</label><textarea id="t_remind" rows="2" oninput="autosaveSettings()">${esc(s.tpl.remind)}</textarea>
+        <div class="preview">Fields: {name} {address} {price} {balance} {date} {biz} {pay}</div>
+      </div>
+    </details>
 
-    ${nativeExtrasHTML()}\n    <div class="sect" id="data">Data & backup</div>
-    <div class="kv"><span>Storage</span><b>${Store.mode}</b></div>
-    <div class="kv"><span>Jobs</span><b>${S.jobs.length}</b></div>
-    <div class="kv"><span>Rounds</span><b>${S.rounds.length}</b></div>
-    <div class="kv"><span>Last backup</span><b>${S.meta.lastExport?uk(S.meta.lastExport.slice(0,10)):"never"}</b></div>
-    <div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22);margin-top:10px">${nativeStorageNote()}</div>
-    <div class="acts" style="margin-top:12px">
-      <button class="btn primary" onclick="exportJSON()">Backup JSON now</button>
-      <button class="btn" onclick="exportCSV()">Export CSV</button>
-    </div>
-    <div class="acts" style="margin-top:8px">
-      <button class="btn" onclick="$('impCSV').click()">Import CSV</button>
-      <button class="btn" onclick="$('impJSON').click()">Restore JSON</button>
-    </div>
-    <input type="file" id="impCSV" accept=".csv,text/csv" style="display:none" onchange="importCSV(this)">
-    <input type="file" id="impJSON" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
-    <div class="preview" style="margin-top:12px">CSV import matches on Aworka Job ID and merges — it never creates a duplicate or wipes your history.</div>
-    <div class="acts" style="margin-top:10px"><button class="btn danger" onclick="resetAll()">Reset to the original import</button></div>`);
-  if(focus) setTimeout(()=>{ const el=$(focus); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },350);
+    ${nativeNotificationsHTML()}
+    ${nativeWidgetsHTML()}
+
+    <details class="settingsgroup" id="data">
+      <summary><span>Data & backup</span><b>${S.jobs.length} jobs</b></summary>
+      <div class="settingbody">
+        <div class="kv"><span>Storage</span><b>${Store.mode}</b></div>
+        <div class="kv"><span>Jobs</span><b>${S.jobs.length}</b></div>
+        <div class="kv"><span>Rounds</span><b>${S.rounds.length}</b></div>
+        <div class="kv"><span>Last backup</span><b>${S.meta.lastExport?uk(S.meta.lastExport.slice(0,10)):"never"}</b></div>
+        <div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22);margin-top:10px">${nativeStorageNote()}</div>
+        <div class="acts" style="margin-top:12px">
+          <button class="btn primary" onclick="exportJSON()">Backup JSON now</button>
+          <button class="btn" onclick="exportCSV()">Export CSV</button>
+        </div>
+        <div class="acts" style="margin-top:8px">
+          <button class="btn" onclick="$('impCSV').click()">Import CSV</button>
+          <button class="btn" onclick="$('impJSON').click()">Restore JSON</button>
+        </div>
+        <input type="file" id="impCSV" accept=".csv,text/csv" style="display:none" onchange="importCSV(this)">
+        <input type="file" id="impJSON" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
+        <div class="preview" style="margin-top:12px">CSV import matches on Aworka Job ID and merges — it never creates a duplicate or wipes your history.</div>
+        <div class="acts" style="margin-top:10px"><button class="btn danger" onclick="resetAll()">Reset to the original import</button></div>
+      </div>
+    </details>`);
+  if(focus) setTimeout(()=>{
+    const el=$(focus);
+    if(el){
+      if(el.tagName==="DETAILS") el.open=true;
+      const group=el.closest&&el.closest("details"); if(group) group.open=true;
+      el.scrollIntoView({behavior:"smooth",block:"start"});
+    }
+  },180);
 }
-function saveSettings(){
+function autosaveSettings(){
   const s=S.settings;
-  s.biz=$("s_biz").value.trim()||s.biz;
-  s.payDetails=$("s_pay").value;
-  s.mins=+$("s_mins").value||30;
-  ["onway","done","chase","remind"].forEach(k=>s.tpl[k]=$("t_"+k).value);
-  closeSheet(); save(); render(); toast("Settings saved");
+  const biz=$("s_biz"), pay=$("s_pay"), mins=$("s_mins");
+  if(biz) s.biz=biz.value.trim()||s.biz;
+  if(pay) s.payDetails=pay.value;
+  if(mins) s.mins=+mins.value||30;
+  ["onway","done","chase","remind"].forEach(k=>{ const el=$("t_"+k); if(el) s.tpl[k]=el.value; });
+  save();
 }
+function saveSettings(){ autosaveSettings(); }
 function addFreq(){
   const w=+$("s_freq").value;
   if(!w||w<1||S.settings.freqs.includes(w)){ toast("Enter a new number of weeks"); return; }
