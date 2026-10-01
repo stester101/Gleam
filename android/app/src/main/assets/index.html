@@ -1698,12 +1698,28 @@ function custMatches(){
   });
   return js;
 }
+function compactCustomerRow(j,picking){
+  const od=overdue(j), on=selHas(j.id);
+  const balance=j.bal>0?" · "+fmt(j.bal)+" owed":j.bal<0?" · "+fmt(-j.bal)+" credit":"";
+  return `<div class="citem custcompact${on?" picked":""}" onclick="tapJob('cust','${j.id}')" ${holdAttr("cust",j.id)}>
+    ${picking?selMark("cust",j.id):""}
+    <div class="grow"><b>${esc(nameOf(j))}</b><span>${esc(j.addr)} · ${esc(roundName(j))} · ${j.price?fmt(j.price):"no price"}${balance}${od?" · overdue":""}</span></div>
+    <div class="compactacts" onclick="event.stopPropagation()">
+      <button class="iconbtn" onclick="askComplete('${j.id}',1)" aria-label="Mark cleaned">✓</button>
+    </div>
+  </div>`;
+}
 function custListHTML(){
   const js=custMatches();
   const picking=selOn("cust");
+  const compact=!!S.settings.compactCustomers;
   if(!js.length) return `<div class="empty"><div>🔍</div><b>No match</b>Try a street name, or clear the filter.</div>`;
-  return (picking?selBar("cust"):`<div class="holdhint">Hold a customer to pick several at once</div>`)+
-    `<div class="${picking?"selmode":""}">`+js.slice(0,300).map(j=>{
+  const hint=picking?selBar("cust"):`<div class="holdhint">Hold a customer to pick several at once</div>`;
+  if(compact){
+    return hint+`<div class="${picking?"selmode":""}">`+
+      js.slice(0,300).map(j=>compactCustomerRow(j,picking)).join("")+`</div>`;
+  }
+  return hint+`<div class="${picking?"selmode":""}">`+js.slice(0,300).map(j=>{
     const od=overdue(j), on=selHas(j.id);
     return `<div class="ccard glass${on?" picked":""}" onclick="tapJob('cust','${j.id}')" ${holdAttr("cust",j.id)}>
       ${picking?selMark("cust",j.id):""}
@@ -1732,11 +1748,21 @@ function custListHTML(){
   }).join("")+`</div>`;
 }
 function renderCustResults(){ const el=$("custResults"); if(el) el.innerHTML=custListHTML(); }
+function toggleCompactCustomers(){
+  S.settings.compactCustomers=!S.settings.compactCustomers;
+  save(); pgCustomers();
+}
 function pgCustomers(){
   const F=UI.custFilter;
+  const compact=!!S.settings.compactCustomers;
   $("p-customers").innerHTML=`
-    <div class="pagetitle" style="margin-top:8px">Customers</div>
-    <div class="pagesub">${activeJobs().length} active · ${S.jobs.filter(j=>!isActive(j)).length} paused or archived</div>
+    <div class="titlerow" style="margin-top:8px">
+      <div style="min-width:0">
+        <div class="pagetitle" style="margin:0">Customers</div>
+        <div class="pagesub" style="margin:2px 0 0">${activeJobs().length} active · ${S.jobs.filter(j=>!isActive(j)).length} paused or archived</div>
+      </div>
+      <button class="viewtoggle" onclick="toggleCompactCustomers()">${compact?"▤ Full":"☰ Compact"}</button>
+    </div>
     <div class="searchwrap" style="margin-bottom:10px">
       <span class="si">🔍</span>
       <input id="custSearch" placeholder="Try a name, street, round or number" value="${esc(UI.custQ)}" oninput="UI.custQ=this.value;renderCustResults();toggleClear('custClear',this.value)">
