@@ -2038,7 +2038,8 @@ function finishDone(id,status,amt,how,date){
       : fmt(owed)+" added to their bill";
     toast("Cleaned"+when+" · "+msg,"Undo",undo);
   };
-  nativeHaptic();\n  if(el){ el.classList.add("cleaning"); setTimeout(apply,700); } else apply();
+  nativeHaptic();
+  if(el){ el.classList.add("cleaning"); setTimeout(apply,700); } else apply();
 }
 function skipSheet(id){
   const j=S.jobs.find(x=>x.id===id);
