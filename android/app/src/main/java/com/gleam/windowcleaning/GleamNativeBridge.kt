@@ -15,8 +15,20 @@ class GleamNativeBridge(
 ) {
     @JavascriptInterface
     fun syncState(json: String) {
-        SnapshotStore.updateFromState(activity, json)
-        GleamWidgetProvider.updateAll(activity)
+        val accepted = NativeStateStore.setFromWeb(activity, json)
+        if (accepted) {
+            SnapshotStore.updateFromState(activity, json)
+            refreshWidgets()
+        }
+    }
+
+    @JavascriptInterface
+    fun pendingNativeState(): String =
+        NativeStateStore.pendingState(activity)
+
+    @JavascriptInterface
+    fun acknowledgeNativeState() {
+        NativeStateStore.acknowledge(activity)
     }
 
     @JavascriptInterface
@@ -29,16 +41,33 @@ class GleamNativeBridge(
         ReminderScheduler.enabled(activity)
 
     @JavascriptInterface
+    fun notificationSettings(): String =
+        ReminderScheduler.settingsJson(activity)
+
+    @JavascriptInterface
+    fun setNotificationSettings(json: String) {
+        ReminderScheduler.setSettings(activity, json)
+        if (ReminderScheduler.enabled(activity)) {
+            activity.requestNotificationPermissionIfNeeded()
+        }
+    }
+
+    @JavascriptInterface
     fun setNotifications(enabled: Boolean) {
         ReminderScheduler.setEnabled(activity, enabled)
         if (enabled) activity.requestNotificationPermissionIfNeeded()
     }
 
     @JavascriptInterface
-    fun requestWidget() {
+    fun requestWidget(type: String) {
         activity.runOnUiThread {
+            val clazz = when (type) {
+                "next" -> NextJobWidgetProvider::class.java
+                "quick" -> QuickCompleteWidgetProvider::class.java
+                else -> GleamWidgetProvider::class.java
+            }
             val manager = AppWidgetManager.getInstance(activity)
-            val provider = ComponentName(activity, GleamWidgetProvider::class.java)
+            val provider = ComponentName(activity, clazz)
             if (Build.VERSION.SDK_INT >= 26 && manager.isRequestPinAppWidgetSupported) {
                 manager.requestPinAppWidget(provider, null, null)
             } else {
@@ -49,6 +78,12 @@ class GleamNativeBridge(
                 ).show()
             }
         }
+    }
+
+    private fun refreshWidgets() {
+        GleamWidgetProvider.updateAll(activity)
+        NextJobWidgetProvider.updateAll(activity)
+        QuickCompleteWidgetProvider.updateAll(activity)
     }
 
     @JavascriptInterface
@@ -98,5 +133,5 @@ class GleamNativeBridge(
     }
 
     @JavascriptInterface
-    fun appVersion(): String = "2.0.0-alpha1"
+    fun appVersion(): String = "2.0.0-alpha2"
 }
