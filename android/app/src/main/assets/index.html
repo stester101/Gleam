@@ -656,7 +656,7 @@ const nativeTime=(h,m)=>String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
 function nativeNotificationsHTML(){
   if(!NATIVE) return "";
   const n=nativeNotificationSettings();
-  return `<details class="settingsgroup">
+  return `<details class="settingsgroup" id="notifications">
     <summary><span>Notifications</span><b>${n.enabled?"On":"Off"}</b></summary>
     <div class="settingbody">
       <label class="switchrow"><span><b>Work reminders</b><small>Master switch</small></span>
@@ -695,12 +695,12 @@ function saveNativeNotificationSettings(){
     leftBehindEnabled:$("n_late")?.checked??cur.leftBehindEnabled
   };
   try{ GleamNative.setNotificationSettings(JSON.stringify(n)); }catch(_){}
-  const sum=$("sheet")?.querySelector(".settingsgroup[open] summary b");
+  const sum=$("notifications")?.querySelector("summary b");
   if(sum&&$("n_master")) sum.textContent=n.enabled?"On":"Off";
 }
 function nativeWidgetsHTML(){
   if(!NATIVE) return "";
-  return `<details class="settingsgroup">
+  return `<details class="settingsgroup" id="widgets">
     <summary><span>Widgets</span><b>3 available</b></summary>
     <div class="settingbody">
       <div class="widgetchoice">
