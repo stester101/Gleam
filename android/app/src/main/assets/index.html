@@ -576,9 +576,11 @@ body.nav-hidden .fab{transform:translateY(84px);opacity:0;pointer-events:none}
 .timepick{margin:0!important;padding:8px 7px!important;font-size:12px!important;text-align:center}
 .widgetchoice{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
 .widgetchoice:last-of-type{border-bottom:0}.widgetchoice>div{flex:1;min-width:0}.widgetchoice b{display:block;font-size:13px}.widgetchoice small{display:block;color:var(--dim);font-size:11px;margin-top:2px;line-height:1.35}.widgetchoice .btn{flex:0 0 auto;padding:8px 13px;margin:0}
-.grabber{top:0;left:0;transform:none;width:100%;height:34px;border-radius:0;background:transparent;z-index:5;pointer-events:auto;touch-action:none;cursor:grab}
+.grabber{top:0;left:56px;right:56px;transform:none;width:auto;height:34px;border-radius:0;background:transparent;z-index:5;pointer-events:auto;touch-action:none;cursor:grab}
 .grabber::after{content:'';position:absolute;top:9px;left:50%;transform:translateX(-50%);width:44px;height:5px;border-radius:5px;background:rgba(255,255,255,.32)}
 .grabber:active{cursor:grabbing}
+.sheet .sheetclose{z-index:6;top:8px;right:8px;width:40px;height:40px}
+.sheet .sheetclose::after{content:'';position:absolute;inset:-4px}
 .waterfx{position:absolute;inset:0;z-index:4;overflow:hidden;pointer-events:none;opacity:0;border-radius:inherit;background:linear-gradient(100deg,rgba(180,239,248,.02),rgba(180,239,248,.17),rgba(180,239,248,.04))}
 .waterfx i{position:absolute;top:-18px;width:7px;height:14px;border-radius:55% 55% 68% 68%;background:linear-gradient(180deg,rgba(230,253,255,.92),rgba(105,214,223,.45));box-shadow:0 0 8px rgba(180,244,255,.32)}
 .waterfx i:nth-child(1){left:9%;animation-delay:.02s}.waterfx i:nth-child(2){left:21%;width:5px;height:11px;animation-delay:.11s}.waterfx i:nth-child(3){left:34%;width:9px;height:17px;animation-delay:.05s}.waterfx i:nth-child(4){left:49%;width:6px;height:13px;animation-delay:.16s}.waterfx i:nth-child(5){left:61%;width:8px;height:16px;animation-delay:.08s}.waterfx i:nth-child(6){left:73%;width:5px;height:10px;animation-delay:.20s}.waterfx i:nth-child(7){left:84%;width:8px;height:15px;animation-delay:.12s}.waterfx i:nth-child(8){left:93%;width:5px;height:12px;animation-delay:.04s}
@@ -599,6 +601,43 @@ body.nav-hidden .fab{transform:translateY(84px);opacity:0;pointer-events:none}
 .hedit button,.daynav button{position:relative}
 .hedit button::after,.daynav button::after{content:'';position:absolute;inset:-6px}
 .hedit button::after{inset:-9px}
+main{padding-bottom:calc(env(safe-area-inset-bottom) + 164px)}
+/* select bars: every action at least 44px tall, wrapping to two rows when needed */
+.selbar2 .acts{flex-wrap:wrap}
+.selbar2 .btn{flex:1 1 calc(33% - 8px);min-width:92px;min-height:44px;padding:10px 8px;font-size:13.5px;line-height:1.15;white-space:normal}
+.selmini{min-height:44px;padding:0 8px}
+/* Paid: payment method chips */
+.paychips{display:flex;gap:6px;margin-top:10px}
+.paychips button{flex:1;min-height:44px;border-radius:12px;border:1px solid var(--edge);background:rgba(255,255,255,.04);color:var(--dim);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.paychips button.on{background:rgba(105,214,223,.16);border-color:rgba(105,214,223,.55);color:var(--text)}
+.sheet .paychips{margin:4px 0 10px}
+/* Full / Compact segmented control */
+.seg.viewseg{margin:0;flex:1.25 1 0;padding:3px;border-radius:13px}
+.seg.viewseg button{padding:8px 6px;font-size:12.5px;min-height:38px}
+.titlerow .seg.viewseg{flex:0 0 auto}
+.dayflags{flex-wrap:wrap}
+.dayflags .btn{min-height:44px}
+/* reorder mode: big controls in place of the card actions */
+.reordertools{display:flex;gap:8px;margin-top:12px}
+.reordertools button{flex:1;min-height:48px;border-radius:13px;border:1px solid var(--edge);background:rgba(255,255,255,.06);color:var(--text);font:inherit;font-size:18px;line-height:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.reordertools button small{font-size:10.5px;color:var(--dim);letter-spacing:.04em}
+.reordertools button:disabled{opacity:.3}
+.citem .reordertools{margin:0;flex:0 0 auto;gap:5px}
+.citem .reordertools button{flex:0 0 44px;min-height:44px;font-size:16px}
+.citem .reordertools button small{display:none}
+.reordermode .card,.reordermode .citem{border-style:dashed}
+/* left-behind banner on one line */
+.strip.slim{padding:8px 12px;font-size:12.5px;white-space:nowrap;min-height:44px;box-sizing:border-box}
+.strip.slim>div{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* quick add confirmation */
+.qadone{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:9px 12px;border-radius:12px;font-size:13px;background:rgba(95,227,176,.12);border:1px solid rgba(95,227,176,.38);color:var(--clean)}
+.qadone span{flex:1;min-width:0}.qadone button{flex:0 0 auto;min-height:36px;background:none;border:0;color:var(--aqua);font:inherit;font-weight:600;cursor:pointer}
+/* removable custom frequency */
+.freqchip{display:inline-flex;align-items:center;gap:4px;padding-right:2px}
+.freqchip button{border:0;background:none;color:var(--dim);font:inherit;font-size:12px;cursor:pointer;min-width:28px;min-height:28px}
+
+.toast{bottom:calc(env(safe-area-inset-bottom) + 152px)}
+body.nav-hidden .toast{bottom:calc(env(safe-area-inset-bottom) + 24px)}
 </style>
 </head>
 <body>
@@ -854,6 +893,14 @@ const uk=s=>s?s.slice(8,10)+"/"+s.slice(5,7)+"/"+s.slice(0,4):"—";
 const shortD=s=>s?dt(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}):"—";
 const fmt=n=>"£"+(Math.round((+n||0)*100)/100).toFixed(2).replace(/\.00$/,"");
 const freqLabel=w=>w?w+" weekly":"On request";
+/* "1 job" / "2 jobs" */
+const pl=(n,one,many)=>n+" "+(n===1?one:(many||one+"s"));
+/* frequencies in weeks, with On request (0) always last */
+const freqSort=a=>a.slice().sort((x,y)=>((x===0)-(y===0))||x-y);
+/* last done = latest clean entry; the stored `last` is only a fallback for imported jobs with no history */
+const lastDone=j=>{ let d=""; (j.hist||[]).forEach(h=>{ if((h.t==="clean"||h.t==="done")&&h.d>d) d=h.d; }); return d||j.last||""; };
+/* rain moves: new "rain" entries, plus older ones that were written as skips */
+const isRainEntry=h=>h.t==="rain"||(h.t==="skip"&&/^Rain day/.test(h.n||""));
 const nameOf=j=>j.name||j.addr.split(",")[0];
 const isActive=j=>j.status==="active";
 const overdue=j=>j.weeks>0 && j.next && dt(j.next)<dt(TODAY());
@@ -890,6 +937,28 @@ const Store={
     if(this.mode==="failed") throw new Error("storage failed");
     return null;
   },
+  /* extra keys beside "state" (e.g. the pre-restore copy) */
+  _mem:{},
+  async putKey(k,v){
+    try{
+      if(this.mode==="IndexedDB") return await new Promise((res,rej)=>{
+        const tx=this.db.transaction("kv","readwrite"); tx.objectStore("kv").put(v,k);
+        tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error);
+      });
+      if(this.mode==="localStorage"){ localStorage.setItem("gleam:"+k,JSON.stringify(v)); return true; }
+      this._mem[k]=v; return true;
+    }catch(e){ return false; }
+  },
+  async getKey(k){
+    try{
+      if(this.mode==="IndexedDB") return await new Promise((res,rej)=>{
+        const q=this.db.transaction("kv","readonly").objectStore("kv").get(k);
+        q.onsuccess=()=>res(q.result==null?null:q.result); q.onerror=()=>rej(q.error);
+      });
+      if(this.mode==="localStorage"){ const v=localStorage.getItem("gleam:"+k); return v?JSON.parse(v):null; }
+      return this._mem[k]||null;
+    }catch(e){ return null; }
+  },
   async set(v){
     if(this.mode==="failed") return false;
     try{
@@ -916,7 +985,7 @@ const DEFAULTS={
       onway:"Hi {name}, Ant here from {biz}. On my way to {address} now — should be with you shortly.",
       done:"Hi {name}, windows done at {address} today. That's {price} please. {pay} Thanks!",
       chase:"Hi {name}, Ant from {biz}. Your window cleaning balance stands at {balance}. Whenever you get a chance: {pay} Thanks!",
-      remind:"Hi {name}, Ant here from {biz}. I'm cleaning at {address} tomorrow, {date}. {price} due on the day. Reply STOP to skip this one."
+      remind:"Hi {name}, Ant here from {biz}. I'm cleaning at {address} {when}. {price} due on the day. Reply STOP to skip this one."
     }
   },
   meta:{lastExport:null,lastSaved:null,nudged:false,schemaVersion:2}
@@ -952,7 +1021,7 @@ function jobsInRound(id){ return S.jobs.filter(j=>j.roundId===id); }
      skip       no charge                           → no money effect
 */
 const HLABEL={opening:"Opening balance",payment:"Payment",writeoff:"Written off",adjustment:"Adjustment",
-  price:"Price change",skip:"Skipped",clean:"Cleaned",
+  price:"Price change",skip:"Skipped",rain:"Rain day",clean:"Cleaned",
   legacy_payment:"Payment",legacy_writeoff:"Written off",legacy_price:"Price change",
   charge:"Clean charged",done:"Cleaned"};
 const MONEY_TYPES=["clean","payment","opening","adjustment","writeoff","charge","done","legacy_payment","legacy_writeoff"];
@@ -1159,22 +1228,27 @@ const leftBehind=()=>activeJobs().filter(j=>j.next&&dt(j.next)<dt(TODAY()))
 const totalOwed=()=>activeJobs().reduce((s,j)=>s+Math.max(0,j.bal),0);
 const totalCredit=()=>activeJobs().reduce((s,j)=>s+Math.max(0,-j.bal),0);
 
-/* projection for schedule view — first visit is max(next, today) */
+/* projection for the Plan view — the same days as Today and the Calendar.
+   Left-behind jobs (due before today) stay on their old day, so they're returned
+   separately as map.late (not enumerable) instead of being piled onto today. */
 function projection(days){
-  const start=TODAY(), end=addD(start,days-1), map={};
-  activeJobs().filter(j=>j.weeks>0&&j.next).forEach(j=>{
-    let d=dt(j.next)<dt(start)?start:j.next, guard=0;
+  const start=TODAY(), end=addD(start,days-1), map={}, late=[];
+  activeJobs().filter(j=>j.next).forEach(j=>{
+    if(dt(j.next)<dt(start)){ late.push(j); return; }
+    if(!(j.weeks>0)){ if(dt(j.next)<=dt(end)) (map[j.next]=map[j.next]||[]).push(j); return; }   // one-off / on request
+    let d=j.next, guard=0;
     while(dt(d)<=dt(end)&&guard++<60){
       (map[d]=map[d]||[]).push(j);
       d=addD(d,j.weeks*7);
     }
   });
   Object.values(map).forEach(a=>a.sort((x,y)=>roundName(x).localeCompare(roundName(y))||x.seq-y.seq));
+  Object.defineProperty(map,"late",{value:late,enumerable:false});
   return map;
 }
 
 /* ================= RENDER ================= */
-let UI={sched:"plan", window:28, custQ:"", custFilter:"all", custRound:"all", custSort:"round",
+let UI={reorder:false, txDoneDate:"", sched:"plan", window:28, custQ:"", custFilter:"all", custRound:"all", custSort:"round",
   moneyPeriod:"month",
   txType:"remind", txDate:"", txRound:"all", txHasNumber:"all",
   selDay:null, todayAll:false, todayQ:"", day:null, calMonth:null, calYear:null, calSel:null,
@@ -1194,14 +1268,18 @@ function renderIfStale(p){ if(STALE.has(p)&&PAGES[p]){ STALE.delete(p); PAGES[p]
 /* predictive back: Android only intercepts back while there is something to close */
 function backTarget(){
   if($("sheet")&&$("sheet").classList.contains("on")) return "sheet";
-  if(SEL&&SEL.ids&&SEL.ids.length) return "select";
-  return "";
+  if(SEL&&SEL.ctx) return "select";              // select mode, even with nothing picked yet
+  if(typeof UI!=="undefined"&&UI.reorder) return "reorder";
+  if(currentPage()!=="today") return "tab";      // other tabs go back to Today first
+  return "";                                     // Today with nothing open: Android exits
 }
 function nativeBackState(){ if(NATIVE){ try{ GleamNative.setBackActive(!!backTarget()); }catch(_){} } }
 function nativeBack(){
   const t=backTarget();
   if(t==="sheet") closeSheet();
   else if(t==="select"){ const c=SEL.ctx; selExit(c); render(); }
+  else if(t==="reorder"){ UI.reorder=false; pgToday(); }
+  else if(t==="tab") go("today");
   nativeBackState();
   return t;
 }
@@ -1227,6 +1305,7 @@ function selRender(ctx){
   else if(ctx==="cal") pgSchedule();
   else if(ctx==="cust") pgCustomers();
   else if(ctx==="late") lateSheet();
+  nativeBackState();
 }
 function enterSel(ctx,id){
   SEL={ctx,ids:id?[id]:[]};
@@ -1301,7 +1380,7 @@ function bulkCompleteSheet(ctx){
   const total=js.reduce((s,j)=>s+(+j.price||0),0);
   sheet(`<h3>Complete ${js.length} job${js.length===1?"":"s"}</h3>
     <div class="sub">${fmt(total)} of work · ${esc(js.slice(0,3).map(nameOf).join(", "))}${js.length>3?" +"+(js.length-3)+" more":""}</div>
-    <label>Date completed</label><input id="bcDate" type="date" value="${bulkDefaultDate(ctx)}">
+    <label>Date completed</label><input id="bcDate" type="date" value="${bulkDoneDate(ctx)}" max="${TODAY()}">
     <div class="preview">Each one gets its own clean logged on that date. Anything paid differently can be fixed on their card afterwards.</div>
     <div class="acts">
       <button class="btn paid" onclick="doBulkComplete('${ctx}','full')">All paid</button>
@@ -1309,15 +1388,36 @@ function bulkCompleteSheet(ctx){
     </div>
     <button class="btn ghost" style="width:100%;margin-top:8px" onclick="closeSheet()">Cancel</button>`);
 }
-function doBulkComplete(ctx,status){
-  const d=($("bcDate")&&$("bcDate").value)||bulkDefaultDate(ctx);
-  const js=selJobs(); if(!js.length) return;
+/* completion is never logged in the future */
+function bulkDoneDate(ctx){ const d=bulkDefaultDate(ctx); return dt(d)>dt(TODAY())?TODAY():d; }
+let PENDING_BULK=null;
+function doBulkComplete(ctx,status,again){
+  let d=($("bcDate")&&$("bcDate").value)||(PENDING_BULK&&PENDING_BULK.d)||bulkDoneDate(ctx);
+  if(dt(d)>dt(TODAY())) d=TODAY();
+  let js=selJobs(); if(!js.length) return;
+  const dupes=js.filter(j=>cleanedOn(j,d));
+  if(dupes.length&&!again){
+    PENDING_BULK={d};
+    const when=d===TODAY()?"today":"on "+uk(d);
+    sheet(`<h3>${dupes.length===js.length?"Already cleaned "+when:pl(dupes.length,"job")+" already cleaned "+when}</h3>
+      <div class="sub">${esc(dupes.slice(0,3).map(nameOf).join(", "))}${dupes.length>3?" +"+(dupes.length-3)+" more":""}</div>
+      <div class="preview">${dupes.length===1?"That one already has":"Those already have"} a clean logged ${when}. Log ${dupes.length===1?"it":"them"} again?</div>
+      ${dupes.length<js.length?`<button class="btn primary" style="width:100%;margin-bottom:8px" onclick="doBulkComplete('${ctx}','${status}','skip')">Only log the other ${pl(js.length-dupes.length,"job")}</button>`:""}
+      <div class="acts">
+        <button class="btn" onclick="doBulkComplete('${ctx}','${status}','all')">Log ${dupes.length===js.length&&js.length>1?"all ":""}again</button>
+        <button class="btn ghost" onclick="PENDING_BULK=null;closeSheet()">Cancel</button>
+      </div>`);
+    return;
+  }
+  PENDING_BULK=null;
+  if(again==="skip") js=js.filter(j=>!cleanedOn(j,d));
+  if(!js.length){ closeSheet(); return; }
   closeSheet(); snap();
   let charged=0,paid=0;
   js.forEach(j=>{ const r=completeJob(j,{status,date:d}); charged+=r.charged; paid+=r.paid; });
   const n=js.length; selExit(ctx,true); save(); render();
   const owed=Math.round((charged-paid)*100)/100;
-  toast(n+" cleaned "+(d===TODAY()?"":"on "+uk(d)+" ")+"· "+(paid?fmt(paid)+" taken":fmt(owed)+" on the bill"),"Undo",undo);
+  toast(pl(n,"job")+" cleaned "+(d===TODAY()?"":"on "+uk(d)+" ")+"· "+(paid?fmt(paid)+" taken":fmt(owed)+" on the bill"),"Undo",undo);
 }
 function bulkMoveSheet(ctx){
   const js=selJobs(); if(!js.length){ toast("Nothing selected"); return; }
@@ -1339,7 +1439,7 @@ function doBulkMove(ctx,keep){
   snap();
   js.forEach(j=>{ if(j.weeks>0) j.anchor=keep?(j.anchor||j.next||null):null; if(!j.weeks&&!j.next) j.anchor=null; j.next=target; });
   const n=js.length; selExit(ctx,true); closeSheet(); save(); render();
-  toast(n+" moved to "+uk(target),"Undo",undo);
+  toast(pl(n,"job")+" moved to "+uk(target),"Undo",undo);
 }
 function bulkSkipSheet(ctx){
   const js=selJobs(); if(!js.length){ toast("Nothing selected"); return; }
@@ -1355,9 +1455,9 @@ function doBulkSkip(ctx){
   const why=(($("bsWhy")&&$("bsWhy").value)||"").trim()||"No reason given";
   const d=bulkDefaultDate(ctx), js=selJobs(); if(!js.length) return;
   closeSheet(); snap();
-  js.forEach(j=>{ j.last=d; advanceNext(j,d); entry(j,{t:"skip",d,a:0,n:why}); });
+  js.forEach(j=>{ advanceNext(j,d); entry(j,{t:"skip",d,a:0,n:why}); });
   const n=js.length; selExit(ctx,true); save(); render();
-  toast(n+" skipped","Undo",undo);
+  toast(pl(n,"job")+" skipped","Undo",undo);
 }
 function bulkRoundSheet(ctx){
   const js=selJobs(); if(!js.length){ toast("Nothing selected"); return; }
@@ -1369,11 +1469,15 @@ function doBulkRound(ctx){
   const rid=$("brRound")&&$("brRound").value; if(!rid) return;
   const js=selJobs(); if(!js.length) return;
   snap();
-  js.forEach(j=>{ j.roundId=rid; });
-  resequence(S.jobs);
+  // moved jobs go on the end of the new round (same as moving one), in their current order
+  const moving=new Set(js.map(j=>j.id)), from=new Set(js.map(j=>j.roundId));
+  let seq=S.jobs.filter(j=>j.roundId===rid&&!moving.has(j.id)).reduce((m,j)=>Math.max(m,+j.seq||0),0);
+  js.slice().sort((a,b)=>roundName(a).localeCompare(roundName(b))||a.seq-b.seq).forEach(j=>{ j.roundId=rid; j.seq=++seq; });
+  // close the gaps they left behind, keeping everyone else's order
+  from.forEach(id=>{ if(id===rid) return; S.jobs.filter(j=>j.roundId===id).sort((a,b)=>a.seq-b.seq).forEach((j,i)=>{ j.seq=i+1; }); });
   const n=js.length, nm=(S.rounds.find(r=>r.id===rid)||{}).name||"round";
   selExit(ctx,true); closeSheet(); save(); render();
-  toast(n+" moved to "+nm,"Undo",undo);
+  toast(pl(n,"job")+" moved to "+nm,"Undo",undo);
 }
 
 /* ---- left behind (yesterday and before, still not dealt with) ---- */
@@ -1382,13 +1486,13 @@ function lateSheet(){
   if(!js.length){ closeSheet(); toast("Nothing left behind"); return; }
   if(SEL.ctx!=="late") SEL={ctx:"late",ids:[]};
   const val=js.reduce((s,j)=>s+(+j.price||0),0);
-  sheet(`<h3>Left behind</h3><div class="sub">${js.length} jobs · ${fmt(val)} · still sitting on their old day</div>
+  sheet(`<h3>Left behind</h3><div class="sub">${pl(js.length,"job")} · ${fmt(val)} · still sitting on their old day</div>
     ${selBar("late")}
     <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="lateToToday()">Bring ${SEL.ids.length?SEL.ids.length:"all "+js.length} to today</button>
     <div class="list" style="background:rgba(255,255,255,.05);border:1px solid var(--edge)">
       ${js.map(j=>`<div class="item${selHas(j.id)?" picked":""}" onclick="tapJob('late','${j.id}')" ${holdAttr("late",j.id)}>
         <div class="tick${selHas(j.id)?" on":""}">${selHas(j.id)?"✓":""}</div>
-        <div class="grow"><b>${esc(nameOf(j))}</b><span>${esc(roundName(j))} · was due ${uk(j.next)} · ${daysBetween(j.next,TODAY())} days ago</span></div>
+        <div class="grow"><b>${esc(nameOf(j))}</b><span>${esc(roundName(j))} · was due ${uk(j.next)} · ${pl(daysBetween(j.next,TODAY()),"day")} ago</span></div>
         <div class="num">${fmt(j.price)}</div></div>`).join("")}
     </div>
     <div class="preview" style="margin-top:12px">Tap to pick, or use Select all. Nothing here has moved on its own — it's exactly where you left it.</div>`);
@@ -1400,7 +1504,7 @@ function lateToToday(){
   js.forEach(j=>{ j.anchor=null; j.next=TODAY(); });
   const n=js.length; SEL={ctx:null,ids:[]};
   closeSheet(); save(); render();
-  toast(n+" brought to today","Undo",undo);
+  toast(pl(n,"job")+" brought to today","Undo",undo);
 }
 
 /* ---- TODAY ---- */
@@ -1413,7 +1517,18 @@ function orderedDay(d){
   });
   return js;
 }
-function toggleCompact(){ S.settings.compactToday=!S.settings.compactToday; save(); pgToday(); }
+function toggleCompact(){ setCompact(!S.settings.compactToday); }
+function setCompact(on){ if(!!S.settings.compactToday===on) return; S.settings.compactToday=on; save(); pgToday(); }
+function toggleReorder(){ UI.reorder=!UI.reorder; if(UI.reorder&&SEL.ctx==="today") SEL={ctx:null,ids:[]}; pgToday(); nativeBackState(); }
+/* reorder-mode controls: big up / down / to-bottom / move-to-date buttons */
+function reorderTools(j,i,total){
+  return `<div class="reordertools" onclick="event.stopPropagation()">
+    <button ${i===0?"disabled":""} onclick="moveToday('${j.id}',-1)" aria-label="Move up">↑<small>Up</small></button>
+    <button ${i>=total-1?"disabled":""} onclick="moveToday('${j.id}',1)" aria-label="Move down">↓<small>Down</small></button>
+    <button ${i>=total-1?"disabled":""} onclick="moveToday('${j.id}','end')" aria-label="Move to bottom">⤓<small>Bottom</small></button>
+    <button onclick="moveSheet('job','${j.id}')" aria-label="Move to another date">📅<small>Date</small></button>
+  </div>`;
+}
 function dayLabel(d){
   if(d===TODAY()) return "Today";
   if(d===addD(TODAY(),1)) return "Tomorrow";
@@ -1463,6 +1578,8 @@ function pgToday(){
   const pct=total?Math.round(doneEntries.length/total*100):0;
   const compact=!!S.settings.compactToday;
   const picking=selOn("today");
+  if(picking||list.length<2) UI.reorder=false;
+  const reorder=!!UI.reorder;
   const spot=list[0], rest=list.slice(1);
   const cap=UI.todayAll?rest.length:24;
   const shown=rest.slice(0,cap), hidden=rest.length-shown.length;
@@ -1471,7 +1588,7 @@ function pgToday(){
     <div class="titlerow">
       <div style="min-width:0">
         <div class="pagetitle">${dayLabel(d)}</div>
-        <div class="daysub">${uk(d)}${isT?"":" · "+(dt(d)<dt(TODAY())?daysBetween(d,TODAY())+" days ago":"in "+daysBetween(TODAY(),d)+" days")}</div>
+        <div class="daysub">${uk(d)}${isT?"":" · "+(dt(d)<dt(TODAY())?pl(daysBetween(d,TODAY()),"day")+" ago":"in "+pl(daysBetween(TODAY(),d),"day"))}</div>
       </div>
       <div class="daynav">
         <button onclick="shiftDay(-1)" aria-label="Previous day">‹</button>
@@ -1482,11 +1599,15 @@ function pgToday(){
     ${weekStrip(d)}
     <div class="dayflags">
       ${isT?"":`<button class="btn" onclick="setDay(TODAY())">Back to today</button>`}
-      <button class="btn ghost" style="flex:1" onclick="toggleCompact()">${compact?"▤ Full cards":"☰ Compact"}</button>
-      ${list.length?`<button class="btn ghost" style="flex:1" onclick="rainDay()">☔ Rain</button>`:""}
+      <div class="seg viewseg" role="radiogroup" aria-label="Card size">
+        <button role="radio" aria-checked="${!compact}" class="${compact?"":"on"}" onclick="setCompact(false)">Full</button>
+        <button role="radio" aria-checked="${compact}" class="${compact?"on":""}" onclick="setCompact(true)">Compact</button>
+      </div>
+      ${list.length>1&&!picking?`<button class="btn ${reorder?"primary":"ghost"}" aria-pressed="${reorder}" onclick="toggleReorder()">${reorder?"✓ Done":"⇅ Reorder"}</button>`:""}
+      ${list.length&&!reorder?`<button class="btn ghost" onclick="rainDay()">☔ Rain</button>`:""}
     </div>
-    ${late.length&&!picking?`<div class="strip" onclick="lateSheet()">
-      <span>☂</span><div><b>${late.length} job${late.length===1?"":"s"} left behind</b> · ${fmt(late.reduce((s,j)=>s+(+j.price||0),0))} still sitting on earlier days</div>
+    ${late.length&&!picking&&!reorder?`<div class="strip slim" onclick="lateSheet()">
+      <span>☂</span><div><b>${pl(late.length,"job")} left behind</b> · ${fmt(late.reduce((s,j)=>s+(+j.price||0),0))}</div>
       <span class="go">Review ›</span></div>`:""}
     <div class="todaysearch">
       <div class="searchwrap">
@@ -1497,7 +1618,7 @@ function pgToday(){
       <button class="addbtn" onclick="quickAdd()" aria-label="Add customer">＋ New</button>
     </div>
     <div id="todayResults">${todaySearchHTML()}</div>
-    <div id="todayRun" class="${picking?"selmode":""}" style="${UI.todayQ.trim()?"display:none":""}">
+    <div id="todayRun" class="${picking?"selmode":""}${reorder?" reordermode":""}" style="${UI.todayQ.trim()?"display:none":""}">
     ${picking?selBar("today"):""}
     ${total&&!picking?`<div class="progresshero glass">
       <div class="prog-top">
@@ -1506,7 +1627,7 @@ function pgToday(){
       </div>
       <div class="prog-bar"><i style="width:${pct}%"></i></div>
     </div>`:""}
-    ${list.length&&!picking?`<div class="holdhint">Hold a job to pick several at once</div>`:""}
+    ${reorder?`<div class="holdhint">Move jobs up or down the day. Tap ✓ Done when finished.</div>`:list.length&&!picking?`<div class="holdhint">Hold a job to pick several at once</div>`:""}
     ${compact
       ? (spot?compactRow(spot,true,0,list.length):"")+shown.map((j,i)=>compactRow(j,false,i+1,list.length)).join("")
       : (spot?jobCard(spot,true,0,list.length):"")+shown.map((j,i)=>jobCard(j,false,i+1,list.length)).join("")}
@@ -1544,11 +1665,11 @@ function todaySearchHTML(){
     return `<div class="empty" style="padding:26px 20px"><div>🔍</div><b>No match</b>Try a name, street or round.</div>`;
   return `<div class="list glass" style="margin-bottom:14px">
     ${roundHits.map(r=>`<div class="item" onclick="roundSheet('${r.id}')">
-      <div class="grow"><b>${esc(r.name)}</b><span>${jobsInRound(r.id).filter(isActive).length} jobs</span></div>
+      <div class="grow"><b>${esc(r.name)}</b><span>${pl(jobsInRound(r.id).filter(isActive).length,"job")}</span></div>
       <span class="restag round">Round</span></div>`).join("")}
     ${jobHits.map(j=>`<div class="item">
       <div class="grow" onclick="jobSheet('${j.id}')"><b>${esc(nameOf(j))}</b><span>${esc(roundName(j))} · ${esc(j.addr)}${j.next?" · "+uk(j.next):" · unscheduled"}</span></div>
-      <button class="restag done" onclick="askComplete('${j.id}')" aria-label="Complete now">✓ Done</button>
+      <button class="restag done" onclick="askComplete('${j.id}')" aria-label="Complete now">Complete</button>
       <button class="restag job" onclick="scheduleSheet('${j.id}')" aria-label="Add to a day">＋ Day</button></div>`).join("")}
   </div>`;
 }
@@ -1562,7 +1683,7 @@ function scheduleSheet(id){
   const j=S.jobs.find(x=>x.id===id); if(!j) return;
   sheet(`<h3>Schedule ${esc(nameOf(j))}</h3><div class="sub">${esc(j.addr)} · ${esc(roundName(j))} · ${freqLabel(j.weeks)}</div>
     <label>Put on this day</label><input id="schDate" type="date" value="${UI.day||TODAY()}">
-    <div class="preview">It'll recur every ${j.weeks||4} weeks from this date. Change the frequency in Edit if needed.</div>
+    <div class="preview">It'll recur every ${pl(j.weeks||4,"week")} from this date. Change the frequency in Edit if needed.</div>
     <div class="acts">
       <button class="btn primary" onclick="doSchedule('${id}',true)">Add to ${(UI.day||TODAY())===TODAY()?"today":uk(UI.day)}</button>
       <button class="btn" onclick="doSchedule('${id}',false)">Use chosen date</button>
@@ -1586,11 +1707,6 @@ function jobCard(j,spotlight,i,total){
     <div class="row1" onclick="tapJob('today','${j.id}')">
       <div class="r1l"><div class="addr">${esc(j.addr)}</div>${j.name?`<div class="who">${esc(j.name)}</div>`:""}</div>
       <div class="r1r" onclick="event.stopPropagation()">
-        <div class="cardtools">
-          <button ${i===0?"disabled":""} onclick="moveToday('${j.id}',-1)" aria-label="Up">↑</button>
-          <button ${i>=total-1?"disabled":""} onclick="moveToday('${j.id}',1)" aria-label="Down">↓</button>
-          <button onclick="moveSheet('job','${j.id}')" aria-label="Move to date">⤓</button>
-        </div>
         <div class="price">${j.price?fmt(j.price):"No price"}</div>
       </div>
     </div>
@@ -1602,11 +1718,11 @@ function jobCard(j,spotlight,i,total){
       ${j.bal<0?`<span class="chip rise">${fmt(-j.bal)} in credit</span>`:""}
       ${j.notes?`<span class="chip note">${esc(j.notes)}</span>`:""}
     </div>
-    <div class="acts" id="a${j.id}">
+    ${UI.reorder?reorderTools(j,i,total):`<div class="acts" id="a${j.id}">
       <button class="btn primary" onclick="event.stopPropagation();askPay('${j.id}')">Complete</button>
       <button class="btn ghost" onclick="event.stopPropagation();skipSheet('${j.id}')">Skip</button>
       <button class="btn ghost" onclick="event.stopPropagation();jobSheet('${j.id}')">Details</button>
-    </div>
+    </div>`}
   </div>`;
 }
 function compactRow(j,spotlight,i,total){
@@ -1615,18 +1731,19 @@ function compactRow(j,spotlight,i,total){
     <div class="grime"></div><div class="blade"></div><div class="waterfx"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     ${picking?selMark("today",j.id):""}
     <div class="grow" onclick="tapJob('today','${j.id}')"><b>${esc(j.addr)}</b><span>${esc(roundName(j))} · ${j.price?fmt(j.price):"no price"}${overdue(j)?" · overdue":""}</span></div>
-    <div class="acts" id="a${j.id}" style="margin:0;flex:0 0 auto">
+    ${UI.reorder?reorderTools(j,i,total):`<div class="acts" id="a${j.id}" style="margin:0;flex:0 0 auto">
       <button class="btn primary" style="padding:7px 10px;font-size:12px" onclick="event.stopPropagation();askPay('${j.id}')">Complete</button>
       <button class="btn ghost" style="padding:7px 10px;font-size:12px" onclick="event.stopPropagation();skipSheet('${j.id}')">Skip</button>
-    </div>
+    </div>`}
   </div>`;
 }
 function askPay(id){
   const j=S.jobs.find(x=>x.id===id), acts=$("a"+id); if(!acts) return;
   if(!j.price){ finishDone(id,"full",0,"",UI.day||TODAY()); return; }
-  acts.outerHTML=`<div class="payask" id="a${id}">
+  acts.outerHTML=`<div class="payask" id="a${id}" onclick="event.stopPropagation()">
+    ${payChips(id,j.pay)}
     <div class="acts">
-      <button class="btn paid" onclick="finishDone('${id}','full',0,'',UI.day)">Paid</button>
+      <button class="btn paid" onclick="finishDone('${id}','full',0,payM('${id}'),UI.day)">Paid</button>
       <button class="btn warn" onclick="finishDone('${id}','none',0,'',UI.day)">Not paid</button>
     </div>
     <div class="acts">
@@ -1653,7 +1770,7 @@ function askComplete(id,withDate){
     <div class="sub">${esc(j.addr)} · ${j.price?fmt(j.price):"no price set"}</div>
     ${withDate?`<label>Which day was it done?</label><input id="acDate" type="date" value="${dflt}" max="${TODAY()}">
       <div class="preview">Back-dating is fine — the clean is logged on that date and the next visit is worked out from it.</div>`:""}
-    ${j.price?`<div class="acts">
+    ${j.price?`${payChips(id,j.pay)}<div class="acts">
       <button class="btn paid" onclick="doAskComplete('${id}','full')">Paid ${fmt(j.price)}</button>
       <button class="btn warn" onclick="doAskComplete('${id}','none')">Not paid</button>
     </div>
@@ -1667,7 +1784,7 @@ function askComplete(id,withDate){
     </div>`}`);
 }
 const askDate=()=>{ const el=$("acDate"); return (el&&el.value)||UI.day||TODAY(); };
-function doAskComplete(id,status){ const d=askDate(); closeSheet(); finishDone(id,status,0,"",d); }
+function doAskComplete(id,status){ const d=askDate(); closeSheet(); finishDone(id,status,0,status==="full"?payM(id):"",d); }
 function partFromAsk(id){ partSheet(id,askDate()); }
 /* part payment: cleaned, but they handed over less than the full price */
 function partSheet(id,date){
@@ -1694,13 +1811,33 @@ const money=v=>{
   if(!t.includes(".")&&/\d,\d{1,2}$/.test(t)) t=t.replace(/,(\d{1,2})$/,".$1");   // comma used as the decimal point
   return Math.round((parseFloat(t.replace(/[^0-9.\-]/g,""))||0)*100)/100;
 };
+/* one-tap payment method for Paid: Cash / Bank / Card, defaulting to how they usually pay */
+const PAY_CHIPS=[["Cash","Cash"],["Bank transfer","Bank"],["Card","Card"]];
+const PAYM={};
+function payChips(id,def){
+  def=def||"Cash"; PAYM[id]=def;
+  const opts=PAY_CHIPS.slice(); if(!opts.some(o=>o[0]===def)) opts.push([def,def]);
+  return `<div class="paychips" role="radiogroup" aria-label="Paid by">${opts.map(([v,l])=>
+    `<button type="button" role="radio" aria-checked="${v===def}" class="${v===def?"on":""}" data-m="${esc(v)}" onclick="event.stopPropagation();pickPayM('${id}',this)">${esc(l)}</button>`).join("")}</div>`;
+}
+function pickPayM(id,btn){
+  PAYM[id]=btn.dataset.m;
+  btn.parentNode.querySelectorAll("button").forEach(b=>{ const on=b===btn; b.classList.toggle("on",on); b.setAttribute("aria-checked",on); });
+}
+const payM=id=>PAYM[id]||"";
 const payMethods=sel=>["Cash","Bank transfer","Card","GoCardless"].map(p=>`<option ${sel===p?"selected":""}>${p}</option>`).join("");
 function moveToday(id,dir){
   const d=UI.day||TODAY();
   const js=orderedDay(d).slice();
-  const i=js.findIndex(j=>j.id===id), k=i+dir;
-  if(i<0||k<0||k>=js.length) return;
-  [js[i],js[k]]=[js[k],js[i]];
+  const i=js.findIndex(j=>j.id===id);
+  if(dir==="end"){
+    if(i<0||i>=js.length-1) return;
+    js.push(js.splice(i,1)[0]);
+  }else{
+    const k=i+dir;
+    if(i<0||k<0||k>=js.length) return;
+    [js[i],js[k]]=[js[k],js[i]];
+  }
   S.dayOrders=S.dayOrders||{}; S.dayOrders[d]=js.map(j=>j.id);
   syncRoundOrder(js);
   save(); pgToday(); pgSchedule();
@@ -1741,6 +1878,9 @@ function planView(){
       <div class="stat glass owed"><b>${fmt(grand)}</b><span>Projected</span></div>
       <div class="stat glass"><b>${days.length}</b><span>Working days</span></div>
     </div>
+    ${map.late.length?`<div class="strip slim" onclick="lateSheet()">
+      <span>☂</span><div><b>${pl(map.late.length,"job")} left behind</b> · not counted above</div>
+      <span class="go">Review ›</span></div>`:""}
     ${days.length?`<div class="list glass">${days.map(d=>{
       const js=map[d], v=js.reduce((s,j)=>s+j.price,0);
       const rs=[...new Set(js.map(j=>roundName(j)))];
@@ -1748,7 +1888,7 @@ function planView(){
         <div class="grow"><b>${shortD(d)}${d===TODAY()?" · today":""}</b>
           <span>${fmt(v)} · ${rs.slice(0,3).join(", ")}${rs.length>3?" +"+(rs.length-3):""}</span>
           <div class="heat"><i style="width:${Math.max(8,js.length/maxJobs*100)}%"></i></div></div>
-        <div class="num" style="text-align:right"><b style="font-size:17px">${js.length}</b><br><span style="font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em">jobs</span></div></div>`;
+        <div class="num" style="text-align:right"><b style="font-size:17px">${js.length}</b><br><span style="font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em">${js.length===1?"job":"jobs"}</span></div></div>`;
     }).join("")}</div>`
     :`<div class="empty"><div>🗓</div><b>Nothing scheduled</b>Give a job a frequency and a next-due date to see it here.</div>`}`;
 }
@@ -1954,7 +2094,10 @@ function pgCustomers(){
         <div class="pagetitle" style="margin:0">Customers</div>
         <div class="pagesub" style="margin:2px 0 0">${activeJobs().length} active · ${S.jobs.filter(j=>!isActive(j)).length} paused or archived</div>
       </div>
-      <button class="viewtoggle" onclick="toggleCompactCustomers()">${compact?"▤ Full":"☰ Compact"}</button>
+      <div class="seg viewseg" role="radiogroup" aria-label="Card size">
+        <button role="radio" aria-checked="${!compact}" class="${compact?"":"on"}" onclick="${compact?"toggleCompactCustomers()":""}">Full</button>
+        <button role="radio" aria-checked="${compact}" class="${compact?"on":""}" onclick="${compact?"":"toggleCompactCustomers()"}">Compact</button>
+      </div>
     </div>
     <div class="searchwrap" style="margin-bottom:10px">
       <span class="si">🔍</span>
@@ -2010,7 +2153,7 @@ function totalsIn(from,to){
     if(h.t==="clean"){ earned+=+h.a||0; cleans++; if(+h.p>0){ collected+=+h.p; paidAtClean+=+h.p; add(h.m,+h.p); } }
     else if(h.t==="payment"||h.t==="legacy_payment"){ collected+=+h.a||0; add(h.m||h.n,+h.a||0); }
     else if(h.t==="writeoff"||h.t==="legacy_writeoff"){ writeoffs+=+h.a||0; }
-    else if(h.t==="skip"){ skips++; }
+    else if(h.t==="skip"&&!isRainEntry(h)){ skips++; }
   }));
   return {earned:r2(earned), collected:r2(collected), paidAtClean:r2(paidAtClean), cleans, skips, writeoffs:r2(writeoffs), byMethod};
 }
@@ -2151,7 +2294,8 @@ function pgMoney(){
 }
 function plannedIn(days){
   const map=projection(days);
-  return r2(Object.values(map).flat().reduce((s,j)=>s+j.price,0));
+  // left-behind work is still to be done, so it still counts as planned money
+  return r2(Object.values(map).flat().concat(map.late).reduce((s,j)=>s+j.price,0));
 }
 /* ---- exports ---- */
 const csvq=v=>{ v=String(v==null?"":v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
@@ -2215,6 +2359,19 @@ function exportDebtors(){
 }
 
 /* ---- TEXTS ---- */
+/* the date a text is about, per type — used for {date}/{when} and to remember what was sent */
+const txDoneDay=()=>UI.txDoneDate||TODAY();
+function txDay(j,type){
+  if(type==="remind") return j.next||TODAY();
+  if(type==="done") return txDoneDay();
+  return TODAY();
+}
+/* sent is remembered per message type and date: j._sent={remind:"2026-11-13",...}. The old true/false flag is ignored. */
+const wasSent=(j,type)=>!!(j._sent&&typeof j._sent==="object"&&j._sent[type]===txDay(j,type));
+function markSent(j,type){
+  if(!j._sent||typeof j._sent!=="object") j._sent={};
+  j._sent[type]=txDay(j,type);
+}
 const TXTYPES=[["remind","Reminder"],["onway","On my way"],["done","Windows done"],["chase","Debt chaser"]];
 function txRecipients(){
   const type=UI.txType;
@@ -2223,7 +2380,8 @@ function txRecipients(){
   else if(type==="remind"){
     js=activeJobs().filter(j=>j.weeks>0&&j.next&&dt(j.next)>=dt(TODAY()));
     if(UI.txDate) js=js.filter(j=>j.next===UI.txDate);
-  } else js=dueToday();
+  } else if(type==="done") js=dayDoneJobs(txDoneDay()).filter(isActive);
+  else js=dueToday();
   if(UI.txRound!=="all") js=js.filter(j=>j.roundId===UI.txRound);
   if(UI.txHasNumber==="yes") js=js.filter(j=>j.ph);
   if(UI.txHasNumber==="no") js=js.filter(j=>!j.ph);
@@ -2233,6 +2391,8 @@ function pgTexts(){
   const type=UI.txType;
   const upcoming=[...new Set(activeJobs().filter(j=>j.weeks>0&&j.next&&dt(j.next)>=dt(TODAY())).map(j=>j.next))].sort();
   if(type==="remind" && UI.txDate && !upcoming.includes(UI.txDate)) UI.txDate="";
+  const doneDays=[0,1,2,3,4,5,6].map(i=>addD(TODAY(),-i)).filter((d,i)=>i===0||dayDone(d).length);
+  if(UI.txDoneDate&&!doneDays.includes(UI.txDoneDate)) UI.txDoneDate="";
   const list=txRecipients();
   const able=list.filter(j=>j.ph);
   const sample=list[0]||{name:"there",addr:"—",price:0,bal:0};
@@ -2242,6 +2402,9 @@ function pgTexts(){
     <div class="txttype">
       ${TXTYPES.map(([k,l])=>`<button class="${type===k?"on":""}" onclick="UI.txType='${k}';pgTexts()">${l}</button>`).join("")}
     </div>
+    ${type==="done"?`<div class="seg scroll">
+      ${doneDays.map(d=>`<button class="${txDoneDay()===d?"on":""}" onclick="UI.txDoneDate='${d}';pgTexts()">${d===TODAY()?"Today":d===addD(TODAY(),-1)?"Yesterday":shortD(d)}</button>`).join("")}
+    </div>`:""}
     ${type==="remind"?`<div class="seg scroll">
       <button class="${!UI.txDate?"on":""}" onclick="UI.txDate='';pgTexts()">All upcoming</button>
       ${upcoming.slice(0,8).map(d=>`<button class="${UI.txDate===d?"on":""}" onclick="UI.txDate='${d}';pgTexts()">${shortD(d)}</button>`).join("")}
@@ -2256,34 +2419,44 @@ function pgTexts(){
       ${[["all","Everyone"],["yes","Has number"],["no","No number"]].map(([k,l])=>
         `<button class="${UI.txHasNumber===k?"on":""}" onclick="UI.txHasNumber='${k}';pgTexts()">${l}</button>`).join("")}
     </div>
-    <div class="preview">${esc(fill(S.settings.tpl[type],sample,sample.next||UI.txDate))}
+    <div class="preview">${esc(fill(S.settings.tpl[type],sample,list[0]?txDay(sample,type):(type==="remind"?UI.txDate:type==="done"?txDoneDay():"")))}
       <button class="btn ghost" style="padding:4px 10px;font-size:12px;margin-top:8px" onclick="openSettings('msg')">Edit wording</button></div>
     <div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22)">Demo — Send opens your Messages app with the text ready. Nothing goes out until you hit send there.</div>
-    <div class="sect"><span>${list.length} ${type==="chase"?"owing":type==="remind"?"scheduled":"on today"}</span><span>${able.length} textable</span></div>
+    <div class="sect"><span>${list.length} ${type==="chase"?"owing":type==="remind"?"scheduled":type==="done"?"cleaned "+(txDoneDay()===TODAY()?"today":shortD(txDoneDay())):"on today"}</span><span>${able.length} textable</span></div>
     ${list.length?`<div class="list glass">${list.map(j=>`<div class="item">
       <div class="grow" onclick="jobSheet('${j.id}')"><b>${esc(nameOf(j))}</b>
         <span>${esc(j.addr)}${type==="chase"?" · owes "+fmt(j.bal):type==="remind"?" · "+uk(j.next):""}</span></div>
-      ${j.ph?`<button class="${j._sent?"sendbtn done":"sendbtn"}" onclick="sms('${j.id}','${type}')">${j._sent?"✓ Sent":"Send"}</button>`
+      ${j.ph?`<button class="${wasSent(j,type)?"sendbtn done":"sendbtn"}" onclick="sms('${j.id}','${type}')">${wasSent(j,type)?"✓ Sent":"Send"}</button>`
         :`<span class="nonum">No number</span>`}
     </div>`).join("")}</div>
     ${able.length>1?`<button class="btn" style="width:100%;margin-top:12px" onclick="markAllSent()">Mark all ${able.length} as sent</button>`:""}`
-    :`<div class="empty"><div>💬</div><b>Nobody to text</b>${type==="chase"?"No outstanding debts.":type==="remind"?"No upcoming jobs for that filter.":"No jobs due today."}</div>`}`;
+    :`<div class="empty"><div>💬</div><b>Nobody to text</b>${type==="chase"?"No outstanding debts.":type==="remind"?"No upcoming jobs for that filter.":type==="done"?"Nothing cleaned on that day yet.":"No jobs due today."}</div>`}`;
 }
 function markAllSent(){
-  txRecipients().filter(j=>j.ph).forEach(j=>j._sent=true);
-  pgTexts(); toast("Marked as sent");
+  const type=UI.txType;
+  txRecipients().filter(j=>j.ph).forEach(j=>markSent(j,type));
+  save(); pgTexts(); toast("Marked as sent");
+}
+/* {when}: "today", "tomorrow" or "on Thu 10 Dec" for the date the text is about */
+function whenWord(date){
+  const d=date||TODAY();
+  if(d===TODAY()) return "today";
+  if(d===addD(TODAY(),1)) return "tomorrow";
+  return "on "+shortD(d);
 }
 function fill(t,j,date){
-  return t.replace(/{name}/g,j.name||"there").replace(/{address}/g,j.addr||"")
+  // older reminder wording said "tomorrow, {date}" whatever the date: read it as {when}
+  t=String(t||"").replace(/\btomorrow, \{date\}/g,"{when}");
+  return t.replace(/{when}/g,whenWord(date)).replace(/{name}/g,j.name||"there").replace(/{address}/g,j.addr||"")
     .replace(/{price}/g,j.price?fmt(j.price):"the usual").replace(/{balance}/g,fmt(j.bal||0))
     .replace(/{date}/g,date?shortD(date):shortD(TODAY())).replace(/{biz}/g,S.settings.biz).replace(/{pay}/g,S.settings.payDetails);
 }
 function sms(id,kind){
   const j=S.jobs.find(x=>x.id===id); if(!j) return;
   if(!j.ph){ toast("No number on file"); return; }
-  const body=encodeURIComponent(fill(S.settings.tpl[kind],j,j.next));
+  const body=encodeURIComponent(fill(S.settings.tpl[kind],j,txDay(j,kind)));
   window.location.href="sms:"+j.ph.replace(/\s/g,"")+"?&body="+body;
-  j._sent=true; pgTexts();
+  markSent(j,kind); save(); if(currentPage()==="texts") pgTexts();
 }
 
 
@@ -2303,17 +2476,43 @@ function completeJob(j,o){
   recalcBal(j);
   return {charged,paid};
 }
-function finishDone(id,status,amt,how,date){
+/* a job already has a clean logged on this date */
+const cleanedOn=(j,d)=>(j.hist||[]).some(h=>(h.t==="clean"||h.t==="done")&&h.d===d);
+const DONE_BUSY=new Set();   // jobs mid-completion: a second tap is ignored
+let PENDING_DONE=null;
+function againSheet(j,d,onYes,onNo){
+  sheet(`<h3>Already cleaned ${d===TODAY()?"today":"on "+uk(d)}</h3>
+    <div class="sub">${esc(nameOf(j))} · ${esc(j.addr)}</div>
+    <div class="preview">There's already a clean logged for this job on ${d===TODAY()?"today's date":uk(d)}. Log another one?</div>
+    <div class="acts">
+      <button class="btn primary" onclick="${onYes}">Log again</button>
+      <button class="btn ghost" onclick="${onNo||"closeSheet()"}">Cancel</button>
+    </div>`);
+}
+function confirmDoneAgain(){
+  const p=PENDING_DONE; PENDING_DONE=null; closeSheet();
+  if(p) finishDone(p.id,p.status,p.amt,p.how,p.date,true);
+}
+function finishDone(id,status,amt,how,date,force){
   const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  if(DONE_BUSY.has(id)) return;        // double tap on Paid / Not paid
   const el=$("c"+id);
   let d=date||UI.day||TODAY();
   if(dt(d)>dt(TODAY())) d=TODAY();     // never log work in the future from a card tap
+  if(!force&&cleanedOn(j,d)){
+    PENDING_DONE={id,status,amt,how,date:d};
+    againSheet(j,d,"confirmDoneAgain()");
+    return;
+  }
+  DONE_BUSY.add(id);
+  const ab=$("a"+id); if(ab) ab.querySelectorAll("button").forEach(b=>b.disabled=true);
   // record and save straight away; the animation only delays the redraw,
   // so closing Gleam mid-animation can't lose the clean
   snap();
   const r=completeJob(j,{status,amt,how,date:d});
   save();
   const apply=()=>{
+    DONE_BUSY.delete(id);
     render();
     const owed=Math.round((r.charged-r.paid)*100)/100;
     const when=d===TODAY()?"":" on "+uk(d);
@@ -2328,7 +2527,7 @@ function finishDone(id,status,amt,how,date){
 }
 function skipSheet(id){
   const j=S.jobs.find(x=>x.id===id);
-  sheet(`<h3>Skip ${esc(nameOf(j))}</h3><div class="sub">Next due moves on ${j.weeks} weeks. No charge.</div>
+  sheet(`<h3>Skip ${esc(nameOf(j))}</h3><div class="sub">${j.weeks>0?"Next due moves on "+pl(j.weeks,"week")+".":"It comes off the list until it's booked again."} No charge.</div>
     <label>Reason (optional)</label>
     <input id="skipWhy" placeholder="Car on drive, gate locked, away…">
     <div class="acts">
@@ -2342,7 +2541,6 @@ function doSkip(id){
   closeSheet(); snap();
   const el=$("c"+id);
   const apply=()=>{
-    j.last=d;
     advanceNext(j,d);
     entry(j,{t:"skip",d,a:0,n:why||"No reason given"});
     save(); render(); toast("Skipped — rolled to "+uk(j.next),"Undo",undo);
@@ -2352,18 +2550,18 @@ function doSkip(id){
 function rainDay(){
   const d=UI.day||TODAY(), list=orderedDay(d);
   if(!list.length){ toast("Nothing left to move"); return; }
-  sheet(`<h3>Rain day</h3><div class="sub">Push ${d===TODAY()?"today's":uk(d)+"'s"} ${list.length} remaining jobs forward. Round order stays as it is.</div>
+  sheet(`<h3>Rain day</h3><div class="sub">Push ${d===TODAY()?"today's":uk(d)+"'s"} ${list.length} remaining ${list.length===1?"job":"jobs"} forward. Round order stays as it is.</div>
     <label>Shift by</label>
     <select id="rainN"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="7">1 week</option></select>
-    <button class="btn primary" style="width:100%" onclick="doRain()">Move ${list.length} jobs</button>`);
+    <button class="btn primary" style="width:100%" onclick="doRain()">Move ${pl(list.length,"job")}</button>`);
 }
 function doRain(){
   const n=+$("rainN").value, d=UI.day||TODAY(), list=orderedDay(d);
   closeSheet(); snap();
   const target=addD(d,n);
-  list.forEach(j=>{ j.next=target; entry(j,{t:"skip",d,a:0,n:"Rain day — moved "+n+" day"+(n>1?"s":"")}); });
+  list.forEach(j=>{ j.next=target; entry(j,{t:"rain",d,a:0,n:"Rain day — moved "+pl(n,"day")}); });
   save(); render();
-  toast(list.length+" jobs moved to "+uk(target),"Undo",undo);
+  toast(pl(list.length,"job")+" moved to "+uk(target),"Undo",undo);
 }
 function paySheet(id){
   const j=S.jobs.find(x=>x.id===id);
@@ -2408,7 +2606,7 @@ function jobSheet(id,ctx){
   sheet(`<h3>${esc(nameOf(j))}</h3><div class="sub">${esc(j.addr)} · ${esc(roundName(j))} #${j.seq}</div>
     <div class="kv"><span>Price</span><b>${j.price?fmt(j.price):"not set"}</b></div>
     <div class="kv"><span>Frequency</span><b>${freqLabel(j.weeks)}</b></div>
-    <div class="kv"><span>Last done</span><b>${uk(j.last)}</b></div>
+    <div class="kv"><span>Last done</span><b>${uk(lastDone(j))}</b></div>
     <div class="kv"><span>Next due</span><b${!j.next?' style="color:var(--faint)"':''}>${j.next?uk(j.next):"Unscheduled"}</b></div>
     <div class="kv"><span>Balance</span><b style="color:${j.bal>0?"var(--suds)":j.bal<0?"var(--aqua)":"var(--clean)"}">${j.bal>0?fmt(j.bal)+" owed":j.bal<0?fmt(-j.bal)+" in credit":"clear"}</b></div>
     ${j.bal>0&&owingSince(j)?`<div class="kv"><span>Owing since</span><b>${uk(owingSince(j))}</b></div>`:""}
@@ -2591,7 +2789,7 @@ function editSheet(id){
     <label>Phone</label><input id="e_ph" value="${esc(v.ph)}" inputmode="tel">
     <label>Email</label><input id="e_email" value="${esc(v.email||"")}" inputmode="email">
     <div class="two"><div><label>Price</label><div class="poundwrap"><span>£</span><input id="e_price" type="text" inputmode="decimal" value="${v.price}" placeholder="0.00"></div></div>
-      <div><label>Every</label><select id="e_weeks">${S.settings.freqs.map(w=>`<option value="${w}" ${v.weeks===w?"selected":""}>${freqLabel(w)}</option>`).join("")}</select></div></div>
+      <div><label>Every</label><select id="e_weeks">${freqSort(S.settings.freqs.concat(S.settings.freqs.includes(+v.weeks)?[]:[+v.weeks||0]).filter((x,i,a)=>a.indexOf(x)===i)).map(w=>`<option value="${w}" ${v.weeks===w?"selected":""}>${freqLabel(w)}</option>`).join("")}</select></div></div>
     <div class="two"><div><label>Next due</label><input id="e_next" type="date" value="${v.next||""}"></div>
       <div><label>Sequence in round</label><input id="e_seq" type="text" inputmode="numeric" pattern="[0-9]*" value="${v.seq}"></div></div>
     <div class="two"><div><label>Balance owed</label><div class="poundwrap"><span>£</span><input id="e_bal" type="text" inputmode="decimal" value="${v.bal}" placeholder="0.00"></div></div>
@@ -2640,27 +2838,39 @@ function minsOptions(sel){
   for(let m=5;m<=90;m+=5) o+=`<option value="${m}" ${(+sel||30)===m?"selected":""}>${m} min</option>`;
   return o;
 }
-function quickAdd(){
+function quickAdd(added){
+  const rs=roundsSorted(), lastR=rs.find(x=>x.id===S.settings.lastRoundId);
+  const keep=added&&added.keep||{};
   sheet(`<h3>New customer</h3><div class="sub">Quick sign-up — full details can wait</div>
+    ${added?`<div class="qadone" role="status"><span>✓ ${esc(added.addr)} added to ${esc(added.round)}</span><button onclick="undo();closeSheet()">Undo</button></div>`:""}
     <label>Address</label><input id="q_addr" placeholder="12 Cow Lane" autofocus>
-    <label>Name (optional)</label><input id="q_name" placeholder="Mrs Cliffe">
+    <div class="two"><div><label>Name (optional)</label><input id="q_name" placeholder="Mrs Cliffe"></div>
+      <div><label>Phone (optional)</label><input id="q_ph" type="tel" inputmode="tel" autocomplete="off" placeholder="07…"></div></div>
     <div class="two"><div><label>Price</label><div class="poundwrap"><span>£</span><input id="q_price" type="text" inputmode="decimal" placeholder="0.00"></div></div>
-      <div><label>Every</label><select id="q_weeks">${S.settings.freqs.map(w=>`<option value="${w}" ${w===4?"selected":""}>${freqLabel(w)}</option>`).join("")}</select></div></div>
-    <div class="two"><div><label>First clean date</label><input id="q_next" type="date" value="${TODAY()}"></div>
-      <div><label>Pays by</label><select id="q_pay">${payMethods("Cash")}</select></div></div>
-    ${roundPicker(roundsSorted()[0]?roundsSorted()[0].name:"","q")}
-    <button class="btn primary" style="width:100%" onclick="doQuickAdd()">Add and carry on</button>
+      <div><label>Every</label><select id="q_weeks">${freqSort(S.settings.freqs).map(w=>`<option value="${w}" ${w===(keep.weeks!=null?keep.weeks:4)?"selected":""}>${freqLabel(w)}</option>`).join("")}</select></div></div>
+    <div class="two"><div><label>First clean date</label><input id="q_next" type="date" value="${keep.next||TODAY()}"></div>
+      <div><label>Pays by</label><select id="q_pay">${payMethods(keep.pay||"Cash")}</select></div></div>
+    ${roundPicker(lastR?lastR.name:(rs[0]?rs[0].name:""),"q")}
+    <button class="btn primary" style="width:100%" onclick="doQuickAdd(true)">Add and carry on</button>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="doQuickAdd(false)">Add and close</button>
     <button class="btn ghost" style="width:100%;margin-top:8px" onclick="editSheet(null)">Full form instead</button>`);
 }
-function doQuickAdd(){
+function doQuickAdd(carryOn){
   const addr=$("q_addr").value.trim();
   if(!addr){ toast("An address is needed"); return; }
   snap();
   const r=ensureRound(pickedRoundName("q"));
+  const keep={weeks:+$("q_weeks").value,next:$("q_next").value||TODAY(),pay:$("q_pay").value};
   S.jobs.push({id:"j"+Date.now(),jid:0,name:($("q_name").value||"").trim(),addr,pc:"",roundId:r.id,seq:activeJobs().filter(j=>j.roundId===r.id).length+1,
-    price:money($("q_price").value),weeks:+$("q_weeks").value,next:$("q_next").value||TODAY(),last:"",bal:0,ph:"",ph2:"",email:"",
-    ps:TODAY(),notes:"",pay:$("q_pay").value,mins:S.settings.mins,status:"active",hist:[],_lv:2});
-  closeSheet(); save(); render(); toast(addr+" added to "+r.name,"Undo",undo);
+    price:money($("q_price").value),weeks:keep.weeks,next:keep.next,last:"",bal:0,ph:($("q_ph")&&$("q_ph").value||"").trim(),ph2:"",email:"",
+    ps:TODAY(),notes:"",pay:keep.pay,mins:S.settings.mins,status:"active",hist:[],_lv:2});
+  S.settings.lastRoundId=r.id;     // next quick add starts on this round
+  save(); render();
+  if(carryOn){
+    // stay open for the next one: fields cleared, round (and frequency, date, payment) kept
+    quickAdd({addr,round:r.name,keep});
+    setTimeout(()=>{ const a=$("q_addr"); if(a) a.focus(); },60);   // the green line in the sheet confirms it (a toast would sit over the buttons)
+  }else{ closeSheet(); toast(addr+" added to "+r.name,"Undo",undo); }
 }
 function setStatus(id,st){
   snap(); const j=S.jobs.find(x=>x.id===id); j.status=st;
@@ -2683,16 +2893,17 @@ function roundSheet(id){
   const nextDay=js.filter(j=>j.next).map(j=>j.next).sort()[0]||"";
   const unsched=js.filter(j=>j.weeks>0&&!j.next).length;
   const scheduled=js.filter(j=>j.next).length;
+  const movable=roundAllJobs(id).length;
   const sel=UI.roundSel;
   const selMode=sel&&sel.round===id;
   const chosen=selMode?sel.ids:[];
   sheet(`<div class="rs-head"><h3>${esc(r.name)}</h3>
     <button class="rainbtn" onclick="toggleRoundSelect('${id}')">${selMode?"Done":"Select"}</button></div>
-    <div class="sub">${js.length} jobs · ${fmt(js.reduce((s,j)=>s+j.price,0))} per visit · ${Math.round(js.reduce((s,j)=>s+j.mins,0)/6)/10} hrs${unsched?` · ${unsched} unscheduled`:""}</div>
+    <div class="sub">${pl(js.length,"job")} · ${fmt(js.reduce((s,j)=>s+j.price,0))} per visit · ${Math.round(js.reduce((s,j)=>s+j.mins,0)/6)/10} hrs${unsched?` · ${unsched} unscheduled`:""}</div>
     ${selMode?"":`<label>Round name</label>
     <div style="display:flex;gap:8px"><input id="rName" value="${esc(r.name)}"><button class="btn" style="flex:0 0 auto;margin-bottom:10px" onclick="renameRound('${id}')">Rename</button></div>
     ${unsched?`<button class="btn primary" style="width:100%;margin-bottom:10px" onclick="scheduleRoundSheet('${id}')">📅 Put ${unsched} unscheduled job${unsched===1?"":"s"} on a day</button>`:""}
-    ${nextDay?`<button class="btn" style="width:100%;margin-bottom:10px" onclick="moveSheet('round','${id}','${nextDay}')">Move whole round to a date</button>`:""}
+    ${movable?`<button class="btn" style="width:100%;margin-bottom:10px" onclick="moveSheet('roundall','${id}')">Move whole round to a date (${pl(movable,"job")})</button>`:""}
     ${scheduled?`<button class="btn ghost" style="width:100%;margin-bottom:10px" onclick="unscheduleRound('${id}')">Move whole round to unscheduled</button>`:""}
     <button class="btn ghost" style="width:100%;margin-bottom:12px" onclick="deleteRoundSheet('${id}')">Delete round</button>`}
     <div class="sect">${selMode?`${chosen.length} selected`:"Order · use arrows to resequence"}${selMode?`<span onclick="selectAllRound('${id}')" style="cursor:pointer;color:var(--aqua);text-transform:none;letter-spacing:0">${chosen.length===js.length?"Clear":"All"}</span>`:""}</div>
@@ -2740,7 +2951,7 @@ function doSelMove(id){
   let base=activeJobs().filter(x=>x.roundId===r.id).length;
   s.ids.forEach(jid=>{ const j=S.jobs.find(x=>x.id===jid); if(j){ j.roundId=r.id; j.seq=++base; } });
   UI.roundSel=null;
-  save(); render(); closeSheet(); roundSheet(r.id); toast(s.ids.length+" moved to "+r.name,"Undo",undo);
+  save(); render(); closeSheet(); roundSheet(r.id); toast(pl(s.ids.length,"job")+" moved to "+r.name,"Undo",undo);
 }
 function selSchedule(id){
   const s=UI.roundSel; if(!s||!s.ids.length) return;
@@ -2765,13 +2976,13 @@ function selUnschedule(id){
   snap();
   s.ids.forEach(jid=>{ const j=S.jobs.find(x=>x.id===jid); if(j){ j.next=""; j.anchor=null; } });
   const n=s.ids.length; UI.roundSel=null;
-  save(); render(); roundSheet(id); toast(n+" moved to unscheduled","Undo",undo);
+  save(); render(); roundSheet(id); toast(pl(n,"job")+" moved to unscheduled","Undo",undo);
 }
 function unscheduleRound(id){
   const n=jobsInRound(id).filter(j=>isActive(j)&&j.next).length;
   snap();
   jobsInRound(id).forEach(j=>{ if(isActive(j)){ j.next=""; j.anchor=null; } });
-  save(); render(); roundSheet(id); toast(n+" jobs moved to unscheduled","Undo",undo);
+  save(); render(); roundSheet(id); toast(pl(n,"job")+" moved to unscheduled","Undo",undo);
 }
 /* schedule every unscheduled job in a round onto one day (they then recur on their own cadence) */
 function scheduleRoundSheet(id){
@@ -2806,7 +3017,7 @@ function deleteRoundSheet(id){
   }
   const others=roundsSorted().filter(x=>x.id!==id);
   if(!others.length){ toast("Create another round first, to move these jobs into"); return; }
-  sheet(`<h3>Delete ${esc(r.name)}?</h3><div class="sub">${js.length} jobs need a new round first.</div>
+  sheet(`<h3>Delete ${esc(r.name)}?</h3><div class="sub">${pl(js.length,"job")} ${js.length===1?"needs":"need"} a new round first.</div>
     <label>Move those jobs to</label>
     <select id="reassignRound">${others.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join("")}</select>
     <div class="acts"><button class="btn danger" onclick="doDeleteRound('${id}',$('reassignRound').value)">Move jobs and delete round</button>
@@ -2834,7 +3045,7 @@ function daySheet(d){
   const order=S.dayOrders&&S.dayOrders[d];
   if(order) js.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
   const byRound={}; js.forEach(j=>{ (byRound[j.roundId]=byRound[j.roundId]||[]).push(j); });
-  sheet(`<h3>${shortD(d)}</h3><div class="sub">${js.length} jobs · ${fmt(js.reduce((s,j)=>s+j.price,0))} · ${Math.round(js.reduce((s,j)=>s+j.mins,0)/6)/10} hrs</div>
+  sheet(`<h3>${shortD(d)}</h3><div class="sub">${pl(js.length,"job")} · ${fmt(js.reduce((s,j)=>s+j.price,0))} · ${Math.round(js.reduce((s,j)=>s+j.mins,0)/6)/10} hrs</div>
     ${Object.keys(byRound).map(rid=>{
       const rjs=byRound[rid], onDay=rjs.filter(j=>j.next===d).length, rname=roundName(rjs[0]);
       return `<div class="sect"><span onclick="roundSheet('${rid}')" style="cursor:pointer">${esc(rname)} ›</span>
@@ -2862,27 +3073,33 @@ function moveDayOrder(d,id,dir){
   S.dayOrders=S.dayOrders||{}; S.dayOrders[d]=js.map(j=>j.id);
   save(); daySheet(d);
 }
+/* every active job in a round that has (or should have) a day: scheduled jobs plus unscheduled regular ones */
+const roundAllJobs=id=>activeJobs().filter(j=>j.roundId===id&&(j.next||j.weeks>0));
 function moveSheet(kind,id,fromDate){
-  const isJob=kind==="job";
+  const isJob=kind==="job", all=kind==="roundall";
   const j=isJob?S.jobs.find(x=>x.id===id):null;
-  const cur=isJob?j.next:fromDate;
+  const cur=isJob?j.next:all?"":fromDate;
   const title=isJob?nameOf(j):((S.rounds.find(r=>r.id===id)||{}).name||"round");
-  const n=isJob?1:activeJobs().filter(x=>x.roundId===id&&x.next===fromDate).length;
-  sheet(`<h3>Move ${esc(title)}</h3><div class="sub">${isJob?"Currently due "+uk(cur):n+" jobs due "+uk(cur)}</div>
-    <label>New date</label><input id="mvDate" type="date" value="${addD(cur||TODAY(),1)}">
+  const n=isJob?1:all?roundAllJobs(id).length:activeJobs().filter(x=>x.roundId===id&&x.next===fromDate).length;
+  // whole round: default to today; otherwise the day after, but never a day already gone
+  let dflt=all?TODAY():addD(cur||TODAY(),1);
+  if(dt(dflt)<dt(TODAY())) dflt=TODAY();
+  sheet(`<h3>Move ${esc(title)}</h3><div class="sub">${isJob?"Currently due "+uk(cur):all?"All "+pl(n,"active job")+" in this round":pl(n,"job")+" due "+uk(cur)}</div>
+    <label>New date</label><input id="mvDate" type="date" value="${dflt}">
     <div class="preview"><b>Keep rhythm</b> — this visit moves, but their normal cycle carries on from the original date.<br><b>Shift schedule</b> — everything shifts, so the new date becomes their cycle going forward.</div>
     <div class="acts">
-      <button class="btn primary" onclick="doMove('${kind}','${id}','${cur}',true)">Keep rhythm</button>
-      <button class="btn" onclick="doMove('${kind}','${id}','${cur}',false)">Shift schedule</button>
+      <button class="btn primary" onclick="doMove('${kind}','${id}','${cur}',true)">Keep rhythm${isJob?"":" · "+pl(n,"job")}</button>
+      <button class="btn" onclick="doMove('${kind}','${id}','${cur}',false)">Shift schedule${isJob?"":" · "+pl(n,"job")}</button>
     </div>`);
 }
 function doMove(kind,id,cur,keep){
   const target=$("mvDate").value; if(!target){ toast("Pick a date"); return; }
   snap();
   const apply=j=>{ if(j.weeks>0){ j.anchor=keep?(j.anchor||j.next||null):null; } j.next=target; };
+  let n=1;
   if(kind==="job"){ const j=S.jobs.find(x=>x.id===id); if(j) apply(j); }
-  else { activeJobs().filter(j=>j.roundId===id&&j.next===cur).forEach(apply); }
-  save(); render(); closeSheet(); toast("Moved to "+uk(target),"Undo",undo);
+  else { const js=kind==="roundall"?roundAllJobs(id):activeJobs().filter(j=>j.roundId===id&&j.next===cur); js.forEach(apply); n=js.length; }
+  save(); render(); closeSheet(); toast((kind==="job"?"":pl(n,"job")+" ")+"moved to "+uk(target),"Undo",undo);
 }
 /* ================= SETTINGS / DATA ================= */
 function openSettings(focus){
@@ -2893,7 +3110,8 @@ function openSettings(focus){
     <label>Payment details (used in texts)</label><textarea id="s_pay" rows="2" oninput="autosaveSettings()">${esc(s.payDetails)}</textarea>
     <div class="two"><div><label>Default minutes per job</label><input id="s_mins" type="number" value="${s.mins}" oninput="autosaveSettings()"></div>
       <div><label>Add a frequency (weeks)</label><input id="s_freq" type="number" placeholder="e.g. 12"></div></div>
-    <div style="margin:-4px 0 12px">${s.freqs.map(w=>`<span class="chip">${freqLabel(w)}</span> `).join("")}
+    <div style="margin:-4px 0 12px">${freqSort(s.freqs).map(w=>BASE_FREQS.includes(w)?`<span class="chip">${freqLabel(w)}</span> `
+      :`<span class="chip freqchip">${freqLabel(w)}<button onclick="removeFreq(${w})" aria-label="Remove ${freqLabel(w)}">✕</button></span> `).join("")}
       <button class="btn ghost" style="padding:4px 10px;font-size:12px" onclick="addFreq()">Add</button></div>
 
     <details class="settingsgroup" id="msg">
@@ -2903,7 +3121,7 @@ function openSettings(focus){
         <label>Windows done</label><textarea id="t_done" rows="2" oninput="autosaveSettings()">${esc(s.tpl.done)}</textarea>
         <label>Debt chaser</label><textarea id="t_chase" rows="2" oninput="autosaveSettings()">${esc(s.tpl.chase)}</textarea>
         <label>Tomorrow's reminder</label><textarea id="t_remind" rows="2" oninput="autosaveSettings()">${esc(s.tpl.remind)}</textarea>
-        <div class="preview">Fields: {name} {address} {price} {balance} {date} {biz} {pay}</div>
+        <div class="preview">Fields: {name} {address} {price} {balance} {date} {when} {biz} {pay}<br>{when} reads "today", "tomorrow" or "on Thu 10 Dec".</div>
       </div>
     </details>
 
@@ -2911,7 +3129,7 @@ function openSettings(focus){
     ${nativeWidgetsHTML()}
 
     <details class="settingsgroup" id="data">
-      <summary><span>Data & backup</span><b>${S.jobs.length} jobs</b></summary>
+      <summary><span>Data & backup</span><b>${pl(S.jobs.length,"job")}</b></summary>
       <div class="settingbody">
         <div class="kv"><span>Storage</span><b>${Store.mode}</b></div>
         <div class="kv"><span>Jobs</span><b>${S.jobs.length}</b></div>
@@ -2952,10 +3170,18 @@ function autosaveSettings(){
   save();
 }
 function saveSettings(){ autosaveSettings(); }
+const BASE_FREQS=[4,5,8,0];
+/* custom frequencies can go once no job (active or not) uses them */
+function removeFreq(w){
+  const n=S.jobs.filter(j=>+j.weeks===w).length;
+  if(n){ toast(`Can't remove ${freqLabel(w)} — ${pl(n,"job")} still ${n===1?"uses":"use"} it`); return; }
+  S.settings.freqs=freqSort(S.settings.freqs.filter(x=>x!==w));
+  save(); openSettings(); toast(freqLabel(w)+" removed");
+}
 function addFreq(){
   const w=+$("s_freq").value;
   if(!w||w<1||S.settings.freqs.includes(w)){ toast("Enter a new number of weeks"); return; }
-  S.settings.freqs=[...S.settings.freqs.filter(x=>x),w,0].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a-b);
+  S.settings.freqs=freqSort([...S.settings.freqs.filter(x=>x),w,0].filter((v,i,a)=>a.indexOf(v)===i));
   save(); openSettings(); toast(w+" weekly added");
 }
 function toggleOutdoor(){
@@ -3107,21 +3333,58 @@ function backupProblem(v){
   }
   return "";
 }
+/* Step 1: check the backup and show what it holds. Nothing is replaced until the user confirms. */
+let PENDING_RESTORE=null;
+function backupWhen(v){
+  const m=v&&v.meta||{}, t=m.lastSaved||m.lastExport||"";
+  return /^\d{4}-\d\d-\d\d/.test(t)?uk(t.slice(0,10)):"an unknown date";
+}
 function restoreState(v,label){
   const problem=backupProblem(v);
   if(problem){ toast(problem); return false; }
   let next;
   try{ next=normaliseState(migrateState(JSON.parse(JSON.stringify(v)))); }
   catch(e){ toast("That file isn't a Gleam backup"); return false; }
-  const prev=S;
-  try{ S=next; recalcAll(); render(); }
-  catch(e){ S=prev; render(); toast("That backup couldn't be opened — nothing changed"); return false; }
-  if(NATIVE&&prev){ try{ GleamNative.recoverySave("restore",JSON.stringify(prev)); }catch(_){} }
+  PENDING_RESTORE={next,label};
+  const nj=next.jobs.length, nr=(next.rounds||[]).length, cur=S?S.jobs.length:0;
+  sheet(`<h3>Replace your data?</h3>
+    <div class="sub">${label?esc(label[0].toUpperCase()+label.slice(1)):"Backup"} from ${esc(backupWhen(v))}</div>
+    <div class="kv"><span>In the backup</span><b>${pl(nj,"job")} · ${pl(nr,"round")}</b></div>
+    <div class="kv"><span>On this phone now</span><b>${pl(cur,"job")} · ${pl((S&&S.rounds||[]).length,"round")}</b></div>
+    <div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22)">The backup replaces everything on this phone: ${pl(cur,"job")} → ${pl(nj,"job")}. A copy of your current data is kept, and you can undo straight after.</div>
+    <div class="acts">
+      <button class="btn danger" onclick="applyRestore()">Replace with backup</button>
+      <button class="btn ghost" onclick="PENDING_RESTORE=null;closeSheet()">Cancel</button>
+    </div>`);
+  return true;
+}
+/* Step 2: keep a pre-restore copy, trial-open the backup, then replace S */
+async function applyRestore(){
+  const p=PENDING_RESTORE; PENDING_RESTORE=null; if(!p) return false;
+  const prev=S, prevJSON=prev?JSON.stringify(prev):null;
+  if(prevJSON){
+    const kept=await Store.putKey("preRestore",{at:new Date().toISOString(),state:prevJSON});
+    if(NATIVE){ try{ GleamNative.recoverySave("restore",prevJSON); }catch(_){} }
+    else if(kept===false){ toast("Couldn't keep a copy of your data — nothing changed"); closeSheet(); return false; }
+  }
+  try{ S=p.next; recalcAll(); render(); }
+  catch(e){ S=prev; render(); closeSheet(); toast("That backup couldn't be opened — nothing changed"); return false; }
   UNDO=null; SEL={ctx:null,ids:[]};
   save(); closeSheet(); render();
   document.body.classList.toggle("outdoor",!!S.settings.outdoor);
-  toast("Restored "+S.jobs.length+" jobs"+(label?" from "+label:""));
+  toast("Restored "+pl(S.jobs.length,"job")+(p.label?" from "+p.label:""),"Undo",undoRestore,9000);
   return true;
+}
+/* put back the data from just before the last restore */
+async function undoRestore(){
+  const c=await Store.getKey("preRestore");
+  if(!c||!c.state){ toast("No copy from before the restore was found"); return; }
+  let prev; try{ prev=normaliseState(migrateState(JSON.parse(c.state))); }catch(e){ toast("That copy couldn't be read"); return; }
+  S=prev; recalcAll();
+  UNDO=null; SEL={ctx:null,ids:[]};
+  save(); closeSheet(); render();
+  document.body.classList.toggle("outdoor",!!S.settings.outdoor);
+  toast("Restore undone — back to "+pl(S.jobs.length,"job"));
 }
 function importJSON(input){
   const file=input.files[0]; if(!file) return;
@@ -3142,7 +3405,7 @@ function recoveryCopies(){
 function recoveryLabel(c){
   const d=new Date(c.modified), day=iso(d);
   const kind=c.name.startsWith("before-")?"Before a restore":"Daily copy";
-  return `${kind} · ${uk(day)} ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})} · ${c.jobs} jobs`;
+  return `${kind} · ${uk(day)} ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})} · ${pl(+c.jobs||0,"job")}`;
 }
 function recoverySheet(){
   const list=recoveryCopies();
@@ -3170,7 +3433,8 @@ function sheet(html){
   $("sheet").classList.add("on"); $("scrim").classList.add("on");
   nativeBackState();
 }
-function closeSheet(){ $("sheet").classList.remove("on"); $("scrim").classList.remove("on"); $("sheet").style.transform=""; nativeBackState(); }
+function closeSheet(){ if(SEL&&SEL.ctx==="late") SEL={ctx:null,ids:[]};   // the left-behind picker lives in its sheet
+  $("sheet").classList.remove("on"); $("scrim").classList.remove("on"); $("sheet").style.transform=""; nativeBackState(); }
 /* keep a focused field visible above the keyboard */
 document.addEventListener("focusin",e=>{
   const el=e.target;
@@ -3218,12 +3482,12 @@ function setupAutoHideNav(){
   },{passive:true});
 }
 let toastT;
-function toast(msg,action,fn){
+function toast(msg,action,fn,ms){
   $("toastMsg").textContent=msg;
   const b=$("toastAct"); b.textContent=action||""; b.style.display=action?"block":"none";
   b.onclick=()=>{ if(fn) fn(); $("toast").classList.remove("on"); };
   $("toast").classList.add("on"); clearTimeout(toastT);
-  toastT=setTimeout(()=>$("toast").classList.remove("on"),3600);
+  toastT=setTimeout(()=>$("toast").classList.remove("on"),ms||3600);
 }
 function go(p){ document.querySelector('.tab[data-p="'+p+'"]').click(); }
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
@@ -3240,6 +3504,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   p.classList.remove("wipe"); void p.offsetWidth; p.classList.add("wipe");
   document.body.classList.remove("nav-hidden");
   $("main").scrollTop=0;
+  nativeBackState();
 });
 (function rain(){ const r=$("rain"); for(let i=0;i<14;i++){ const d=document.createElement("div"); d.className="drop";
   d.style.left=Math.random()*100+"%"; d.style.animationDuration=(1.6+Math.random()*2.6)+"s";
@@ -3262,7 +3527,7 @@ function normaliseState(v){
   v.meta.schemaVersion=2;
   if(v.settings.compactToday===undefined) v.settings.compactToday=false;
   if(v.settings.compactCustomers===undefined) v.settings.compactCustomers=false;
-  v.settings.freqs=v.settings.freqs||[4,5,8,0];
+  v.settings.freqs=freqSort(v.settings.freqs||[4,5,8,0]);
   v.settings.tpl=v.settings.tpl||{};
   Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!v.settings.tpl[k]) v.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
   if(!v.rounds) v.rounds=[];
