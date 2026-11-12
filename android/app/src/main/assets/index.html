@@ -23,7 +23,7 @@
   --r:20px;--pad:16px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;touch-action:manipulation}
+html,body{height:100%;touch-action:manipulation;overscroll-behavior-x:none}
 body{margin:0;background:var(--ink);color:var(--text);font-family:Figtree,Roboto,sans-serif;font-size:15px;line-height:1.45;overflow:hidden}
 #app{position:relative;display:flex;flex-direction:column;width:100%;max-width:440px;min-width:0;height:100vh;height:100dvh;margin:0 auto;overflow:hidden;isolation:isolate;
   background:radial-gradient(120% 80% at 10% 0%, #10597e 0%, transparent 55%),
@@ -64,8 +64,11 @@ header{position:relative;z-index:3;flex:0 0 auto;padding:calc(env(safe-area-inse
 main{position:relative;z-index:2;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:0 var(--pad) calc(96px + env(safe-area-inset-bottom) + 20px);scroll-behavior:smooth}
 .page{display:none}
 .page.on{display:block}
-.page.wipe{animation:wipein .34s cubic-bezier(.4,0,.2,1)}
-@keyframes wipein{from{clip-path:inset(0 100% 0 0);opacity:.5}to{clip-path:inset(0 0 0 0);opacity:1}}
+.page.wipe{animation:pagein .22s cubic-bezier(.2,.8,.2,1)}
+.page.wipe.fromL{animation-name:pageinL}
+@keyframes pagein{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pageinL{from{transform:translateX(-28px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.page.wipe{animation:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
@@ -3547,11 +3550,35 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   const p=$("p-"+target);
   renderIfStale(target);
   p.classList.add("on");
-  p.classList.remove("wipe"); void p.offsetWidth; p.classList.add("wipe");
+  const order=[...document.querySelectorAll(".tab")].map(x=>x.dataset.p), fromIdx=order.indexOf(UI.lastTab||"today");
+  UI.lastTab=target;
+  p.classList.remove("wipe","fromL"); void p.offsetWidth; p.classList.add("wipe"); if(order.indexOf(target)<fromIdx) p.classList.add("fromL");
   document.body.classList.remove("nav-hidden");
   $("main").scrollTop=0;
   nativeBackState();
 });
+/* swipe left/right on the page to move between tabs */
+(function(){
+  const main=$("main"); let sx=0,sy=0,st=0,ok=false;
+  const blocked=el=>!!(el&&el.closest&&el.closest("input,select,textarea,.seg,.wkstrip,.sheet,[data-noswipe]")) ;
+  const scrollsX=el=>{ for(let n=el;n&&n!==main;n=n.parentElement){ if(n.scrollWidth>n.clientWidth+4){ const o=getComputedStyle(n).overflowX; if(o==="auto"||o==="scroll") return true; } } return false; };
+  main.addEventListener("touchstart",e=>{
+    const t=e.touches[0]; ok=e.touches.length===1;
+    sx=t.clientX; sy=t.clientY; st=Date.now();
+    if(sx<24||sx>window.innerWidth-24) ok=false;               // leave the edges to Android's back gesture
+    if(blocked(e.target)||scrollsX(e.target)) ok=false;
+    if($("sheet").classList.contains("on")||(SEL&&SEL.ctx)||UI.reorder) ok=false;
+  },{passive:true});
+  main.addEventListener("touchend",e=>{
+    if(!ok) return; ok=false;
+    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy, dt=Date.now()-st;
+    if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt>600) return;
+    const tabs=[...document.querySelectorAll(".tab")], i=tabs.findIndex(x=>x.classList.contains("on"));
+    const n=tabs[i+(dx<0?1:-1)]; if(!n) return;
+    if(HOLD&&HOLD.t) holdCancel();
+    n.click();
+  },{passive:true});
+})();
 (function rain(){ const r=$("rain"); for(let i=0;i<14;i++){ const d=document.createElement("div"); d.className="drop";
   d.style.left=Math.random()*100+"%"; d.style.animationDuration=(1.6+Math.random()*2.6)+"s";
   d.style.animationDelay=(Math.random()*4)+"s"; d.style.opacity=.2+Math.random()*.6; r.appendChild(d); } })();
