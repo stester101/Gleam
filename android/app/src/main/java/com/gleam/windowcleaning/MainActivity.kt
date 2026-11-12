@@ -17,6 +17,7 @@ import android.webkit.WebViewClient
 import org.json.JSONObject
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import android.widget.FrameLayout
 import androidx.activity.enableEdgeToEdge
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
@@ -158,14 +159,24 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        setContentView(webView)
+        // The WebView sits in a container so the keyboard can genuinely shrink it.
+        // (Padding on the WebView itself doesn't resize the page on many devices,
+        // e.g. Samsung, so the keyboard covered text boxes.)
+        val root = FrameLayout(this).apply {
+            setBackgroundColor(Color.parseColor("#04141f"))
+            addView(webView, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        }
+        setContentView(root)
 
         // Edge-to-edge: the page handles system bars via env(safe-area-inset-*);
-        // only the keyboard needs native help, by shrinking the WebView above it.
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+        // only the keyboard needs native help: lift the whole WebView above it.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-            view.setPadding(0, 0, 0, (ime - nav).coerceAtLeast(0))
+            val lift = if (insets.isVisible(WindowInsetsCompat.Type.ime())) ime else 0  // full keyboard height: never let it overlap the page
+            view.setPadding(0, 0, 0, lift)
+            // tell the page so it can keep the focused box in view
+            webView.evaluateJavascript("window.onKeyboard&&window.onKeyboard(${if (lift > 0) "true" else "false"})", null)
             insets
         }
 

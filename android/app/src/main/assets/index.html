@@ -646,6 +646,17 @@ body{font-variant-numeric:tabular-nums}
 .brand h1,.pagetitle,.sheet h3,.calhead b{font-family:Outfit,Figtree,Roboto,sans-serif}
 /* when a sheet is open, show toasts at the top so they never cover sheet buttons */
 body:has(#sheet.on) .toast{bottom:auto;top:calc(env(safe-area-inset-top) + 14px)}
+/* swipe a job card: coloured backing shows through the gap the card leaves */
+#p-today .card[id^="c"],#p-today .citem[id^="c"]{touch-action:pan-y}
+.swiping{position:relative;z-index:1;will-change:transform}
+.swipebg{position:absolute;z-index:0;display:flex;align-items:center;overflow:hidden;pointer-events:none;
+  font-family:Outfit,Figtree,sans-serif;font-weight:700;font-size:15px;white-space:nowrap;transition:background .15s}
+.swipebg span{padding:0 18px}
+.swipebg.pay{justify-content:flex-start;background:rgba(95,227,176,.22);color:var(--clean);box-shadow:inset 0 0 0 1px rgba(95,227,176,.35)}
+.swipebg.pay.go{background:rgba(95,227,176,.45);color:#fff}
+.swipebg.skip{justify-content:flex-end;background:rgba(245,214,123,.2);color:var(--suds);box-shadow:inset 0 0 0 1px rgba(245,214,123,.35)}
+.swipebg.skip.go{background:rgba(245,214,123,.42);color:#fff}
+body.kb-open nav,body.kb-open .fab{display:none}
 </style>
 </head>
 <body>
@@ -697,6 +708,13 @@ function nativeSync(){
 function nativeHaptic(){
   if(!NATIVE) return;
   try{ GleamNative.haptic(); }catch(_){}
+}
+/* short buzz on taps — the "Little buzz on taps" setting turns it off */
+const feelOn=k=>!(typeof S!=="undefined"&&S&&S.settings&&S.settings[k]===false);
+function buzz(){
+  if(!feelOn("buzz")) return;
+  if(NATIVE){ try{ GleamNative.haptic(); return; }catch(_){} }
+  try{ if(navigator.vibrate) navigator.vibrate(15); }catch(_){}
 }
 function nativeStorageNote(){
   if(NATIVE) return "Stored privately inside the Gleam app. Use <b>Backup JSON now</b> whenever you want a portable copy that can also be restored into another Gleam install.";
@@ -855,7 +873,7 @@ function submitRequest(){
   const tab=((document.querySelector(".tab.on")||{}).dataset||{}).p||"";
   S.requests=S.requests||[];
   S.requests.push({id:"q"+Date.now().toString(36),at:new Date().toISOString(),tab,text,sent:false});
-  save(); closeSheet(); nativeHaptic();
+  save(); closeSheet(); buzz();
   toast("Thanks — request saved");
   sendRequests();
 }
@@ -989,6 +1007,7 @@ const DEFAULTS={
     biz:"Gleam Window Cleaning", owner:"Ant Hardman",
     payDetails:"Bank: 09-01-29 / 12345678 (A Hardman). Cash or card also fine.",
     mins:30, freqs:[4,5,8,0], outdoor:false, compactToday:false, compactCustomers:false,
+    swipeTabs:true, swipeJobs:true, keepScroll:true, buzz:true,
     tpl:{
       onway:"Hi {name}, Ant here from {biz}. On my way to {address} now — should be with you shortly.",
       done:"Hi {name}, windows done at {address} today. That's {price} please. {pay} Thanks!",
@@ -998,6 +1017,7 @@ const DEFAULTS={
   },
   meta:{lastExport:null,lastSaved:null,nudged:false,schemaVersion:2}
 };
+const FEEL_KEYS=["swipeTabs","swipeJobs","keepScroll","buzz"];
 
 /* ---- rounds registry ---- */
 function roundsSorted(){ return (S.rounds||[]).slice().sort((a,b)=>a.order-b.order); }
@@ -1338,7 +1358,7 @@ function hold(e,ctx,id){
   clearTimeout(HOLD.t);
   HOLD.t=setTimeout(()=>{
     HOLD.t=null; HOLD.fired=true;
-    try{ if(navigator.vibrate) navigator.vibrate(18); }catch(_){}
+    buzz();
     if(SEL.ctx===ctx) toggleSel(ctx,id); else enterSel(ctx,id);
   },400);
 }
@@ -2530,7 +2550,7 @@ function finishDone(id,status,amt,how,date,force){
       : fmt(owed)+" added to their bill";
     toast("Cleaned"+when+" · "+msg,"Undo",undo);
   };
-  nativeHaptic();
+  buzz();
   if(el){ el.classList.add("cleaning"); setTimeout(apply,700); } else apply();
 }
 function skipSheet(id){
@@ -2543,17 +2563,19 @@ function skipSheet(id){
       <button class="btn ghost" onclick="closeSheet()">Cancel</button>
     </div>`);
 }
-function doSkip(id){
-  const j=S.jobs.find(x=>x.id===id), why=($("skipWhy").value||"").trim();
+function doSkip(id,swiped){
+  const j=S.jobs.find(x=>x.id===id); if(!j) return;
+  const w=$("skipWhy"), why=((w&&!swiped&&w.value)||"").trim();
   const d=UI.day||TODAY();
-  closeSheet(); snap();
+  if(!swiped) closeSheet();
+  snap(); buzz();
   const el=$("c"+id);
   const apply=()=>{
     advanceNext(j,d);
     entry(j,{t:"skip",d,a:0,n:why||"No reason given"});
     save(); render(); toast("Skipped — rolled to "+uk(j.next),"Undo",undo);
   };
-  if(el){ el.style.transition="opacity .3s,transform .3s"; el.style.opacity=0; el.style.transform="translateX(-30px)"; setTimeout(apply,300); } else apply();
+  if(el){ el.style.transition="opacity .3s,transform .3s"; el.style.opacity=0; el.style.transform=swiped?"translateX(-105%)":"translateX(-30px)"; setTimeout(apply,300); } else apply();
 }
 function rainDay(){
   const d=UI.day||TODAY(), list=orderedDay(d);
@@ -2602,7 +2624,7 @@ function doRain(){
   const d=UI.day||TODAY(), list=orderedDay(d), target=rainTarget(), keep=!!(UI.rain&&UI.rain.keep);
   if(!target){ toast("Pick a date first"); return; }
   const n=Math.round((dt(target)-dt(d))/864e5);
-  closeSheet(); snap();
+  closeSheet(); snap(); buzz();
   list.forEach(j=>{
     if(j.weeks>0) j.anchor=keep?(j.anchor||j.next||d):null;
     j.next=target;
@@ -3173,6 +3195,8 @@ function openSettings(focus){
       </div>
     </details>
 
+    ${feelHTML()}
+
     ${nativeNotificationsHTML()}
     ${nativeWidgetsHTML()}
 
@@ -3207,6 +3231,27 @@ function openSettings(focus){
       el.scrollIntoView({behavior:"smooth",block:"start"});
     }
   },180);
+}
+/* Gestures & feel — each switch saves straight away */
+const FEEL_ROWS=[
+  ["swipeTabs","Swipe between tabs","Swipe left or right on the page to change tab"],
+  ["swipeJobs","Swipe jobs to complete or skip","On Today: swipe right for Paid, left to skip"],
+  ["keepScroll","Remember where I scrolled","Each tab opens where you left it"],
+  ["buzz","Little buzz on taps","A short vibration when you finish, skip or pick a job"]];
+const feelCount=()=>FEEL_KEYS.filter(feelOn).length;
+function feelHTML(){
+  return `<details class="settingsgroup" id="feel">
+    <summary><span>Gestures & feel</span><b id="feelSum">${feelCount()} of ${FEEL_KEYS.length} on</b></summary>
+    <div class="settingbody">
+      ${FEEL_ROWS.map(([k,t,d])=>`<label class="switchrow"><span><b>${t}</b><small>${d}</small></span>
+        <input id="f_${k}" type="checkbox" ${feelOn(k)?"checked":""} onchange="setFeel('${k}',this.checked)"></label>`).join("")}
+    </div>
+  </details>`;
+}
+function setFeel(k,on){
+  S.settings[k]=!!on; save();
+  const b=$("feelSum"); if(b) b.textContent=feelCount()+" of "+FEEL_KEYS.length+" on";
+  if(k==="buzz"&&on) buzz();
 }
 function autosaveSettings(){
   const s=S.settings;
@@ -3488,6 +3533,10 @@ document.addEventListener("focusin",e=>{
   const el=e.target;
   if(el&&el.matches&&el.matches("input,textarea,select")) setTimeout(()=>{ try{ el.scrollIntoView({block:"center",behavior:"smooth"}); }catch(_){} },320);
 });
+/* the Android app tells us when the keyboard opens/closes (it lifts the page above it) */
+function keepFocusVisible(){ const el=document.activeElement; if(el&&el.matches&&el.matches("input,textarea,select")) try{ el.scrollIntoView({block:"center",behavior:"smooth"}); }catch(_){} }
+window.onKeyboard=open=>{ document.body.classList.toggle("kb-open",!!open); if(open) setTimeout(keepFocusVisible,60); };
+if(window.visualViewport) visualViewport.addEventListener("resize",()=>setTimeout(keepFocusVisible,60));
 function setupSheetSwipe(){
   const sh=$("sheet");
   let startY=null, dragging=false, pointerId=null;
@@ -3537,9 +3586,12 @@ function toast(msg,action,fn,ms){
   $("toast").classList.add("on"); clearTimeout(toastT);
   toastT=setTimeout(()=>$("toast").classList.remove("on"),ms||3600);
 }
-function go(p){ document.querySelector('.tab[data-p="'+p+'"]').click(); }
+function go(p){ UI.goTop=true; document.querySelector('.tab[data-p="'+p+'"]').click(); }
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   const target=t.dataset.p, wasOn=t.classList.contains("on");
+  const prevTab=((document.querySelector(".tab.on")||{}).dataset||{}).p, goTop=UI.goTop; UI.goTop=false;
+  UI.scrollAt=UI.scrollAt||{};
+  if(prevTab&&!wasOn) UI.scrollAt[prevTab]=$("main").scrollTop;   // remember where this tab was left
   document.body.classList.remove("nav-hidden");
   if($("sheet").classList.contains("on")) closeSheet();   // never leave a modal hanging behind a tab
   if(SEL&&SEL.ctx){ const c=SEL.ctx; SEL={ctx:null,ids:[]}; if(c!=="late") selRender(c); }   // a selection never follows you to another tab
@@ -3554,9 +3606,86 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   UI.lastTab=target;
   p.classList.remove("wipe","fromL"); void p.offsetWidth; p.classList.add("wipe"); if(order.indexOf(target)<fromIdx) p.classList.add("fromL");
   document.body.classList.remove("nav-hidden");
-  $("main").scrollTop=0;
+  // re-tapping the active tab (or jumping here from elsewhere) goes to the top
+  const back=(!wasOn&&!goTop&&feelOn("keepScroll"))?(UI.scrollAt[target]||0):0;
+  const jump=()=>{ try{ $("main").scrollTo({top:back,behavior:"instant"}); }catch(_){ $("main").scrollTop=back; } };
+  if(back){ jump(); requestAnimationFrame(()=>{ if(document.querySelector(".tab.on")===t) jump(); }); }
+  else $("main").scrollTop=0;
   nativeBackState();
 });
+/* swipe a job card on Today: right = Paid (usual method), left = Skip */
+const CSW={el:null,mode:"",handled:false,until:0};
+function swipeCardAt(t){
+  if(!feelOn("swipeJobs")||!t||!t.closest) return null;
+  const c=t.closest("#p-today .card[id^='c'],#p-today .citem[id^='c']");
+  if(!c||t.closest("input,select,textarea,.selmark")) return null;
+  if($("sheet").classList.contains("on")||(SEL&&SEL.ctx)||UI.reorder) return null;
+  const id=c.id.slice(1), j=S.jobs.find(x=>x.id===id);
+  if(!j||DONE_BUSY.has(id)||c.classList.contains("cleaning")||cleanedOn(j,UI.day||TODAY())) return null;
+  return c;
+}
+(function(){
+  const main=$("main"); let sx=0,sy=0,st=0,dx=0,w=1,bg=null,lab=null;
+  const reset=(el,instant)=>{
+    if(bg){ bg.remove(); bg=null; }
+    if(!el) return;
+    el.style.transition=instant?"none":"transform .22s cubic-bezier(.2,.9,.3,1.2)";
+    el.style.transform="";
+    setTimeout(()=>{ el.style.transition=""; el.classList.remove("swiping"); },instant?0:240);
+  };
+  const paint=()=>{
+    const el=CSW.el, right=dx>0, far=Math.abs(dx)>=w*.35;
+    el.style.transform=`translateX(${dx}px)`;
+    bg.className="swipebg "+(right?"pay":"skip")+(far?" go":"");
+    bg.style.left=(right?el.offsetLeft:el.offsetLeft+w+dx)+"px";
+    bg.style.width=Math.abs(dx)+"px";
+    const j=S.jobs.find(x=>x.id===el.id.slice(1));
+    lab.textContent=right?(j&&j.price?"✓ Paid · "+(payM(j.id)||j.pay||"Cash"):"✓ Done"):"Skip →";
+  };
+  main.addEventListener("touchstart",e=>{
+    CSW.handled=false; CSW.mode=""; CSW.el=null;
+    if(e.touches.length!==1) return;
+    const el=swipeCardAt(e.target); if(!el) return;
+    const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); dx=0;
+    CSW.el=el; CSW.mode="wait";
+  },{passive:true});
+  main.addEventListener("touchmove",e=>{
+    if(!CSW.el||!CSW.mode||CSW.mode==="off") return;
+    const t=e.touches[0], mx=t.clientX-sx, my=t.clientY-sy;
+    if(CSW.mode==="wait"){
+      if(Math.abs(mx)<10&&Math.abs(my)<10) return;
+      if(Math.abs(mx)<=Math.abs(my)*1.2||(SEL&&SEL.ctx)){ CSW.mode="off"; return; }   // mostly vertical: let it scroll
+      CSW.mode="drag"; CSW.handled=true; holdCancel();
+      const el=CSW.el; w=el.offsetWidth||1;
+      el.classList.add("swiping"); el.style.transition="none";
+      bg=document.createElement("div"); lab=document.createElement("span"); bg.appendChild(lab);
+      bg.style.top=el.offsetTop+"px"; bg.style.height=el.offsetHeight+"px";
+      bg.style.borderRadius=getComputedStyle(el).borderRadius;
+      el.parentNode.insertBefore(bg,el);
+    }
+    if(e.cancelable) e.preventDefault();
+    dx=mx; paint();
+  },{passive:false});
+  const end=e=>{
+    const el=CSW.el, mode=CSW.mode; CSW.mode=""; CSW.el=null;
+    if(!el||mode!=="drag") return;
+    CSW.until=Date.now()+450;                        // swallow the click a lifted finger can make
+    const ms=Math.max(1,Date.now()-st), fling=Math.abs(dx)>40&&Math.abs(dx)/ms>0.6;
+    const go=e.type==="touchend"&&(Math.abs(dx)>=w*.35||fling);
+    const id=el.id.slice(1), j=S.jobs.find(x=>x.id===id);
+    if(!go||!j){ reset(el); return; }
+    if(dx>0){
+      reset(el,true);
+      finishDone(id,"full",0,j.price?(payM(id)||j.pay||"Cash"):"",UI.day||TODAY());
+    } else {
+      if(bg){ bg.remove(); bg=null; }
+      doSkip(id,true);
+    }
+  };
+  main.addEventListener("touchend",end,{passive:true});
+  main.addEventListener("touchcancel",end,{passive:true});
+  main.addEventListener("click",e=>{ if(Date.now()<CSW.until){ e.stopPropagation(); e.preventDefault(); } },true);
+})();
 /* swipe left/right on the page to move between tabs */
 (function(){
   const main=$("main"); let sx=0,sy=0,st=0,ok=false;
@@ -3568,9 +3697,11 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
     if(sx<24||sx>window.innerWidth-24) ok=false;               // leave the edges to Android's back gesture
     if(blocked(e.target)||scrollsX(e.target)) ok=false;
     if($("sheet").classList.contains("on")||(SEL&&SEL.ctx)||UI.reorder) ok=false;
+    if(!feelOn("swipeTabs")||swipeCardAt(e.target)) ok=false;   // a job card swipe owns this gesture
   },{passive:true});
   main.addEventListener("touchend",e=>{
     if(!ok) return; ok=false;
+    if(CSW.handled) return;
     const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy, dt=Date.now()-st;
     if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt>600) return;
     const tabs=[...document.querySelectorAll(".tab")], i=tabs.findIndex(x=>x.classList.contains("on"));
@@ -3600,6 +3731,7 @@ function normaliseState(v){
   v.meta.schemaVersion=2;
   if(v.settings.compactToday===undefined) v.settings.compactToday=false;
   if(v.settings.compactCustomers===undefined) v.settings.compactCustomers=false;
+  FEEL_KEYS.forEach(k=>{ if(typeof v.settings[k]!=="boolean") v.settings[k]=DEFAULTS.settings[k]; });
   v.settings.freqs=freqSort(v.settings.freqs||[4,5,8,0]);
   v.settings.tpl=v.settings.tpl||{};
   Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!v.settings.tpl[k]) v.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
