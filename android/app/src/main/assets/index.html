@@ -2555,16 +2555,56 @@ function doSkip(id){
 function rainDay(){
   const d=UI.day||TODAY(), list=orderedDay(d);
   if(!list.length){ toast("Nothing left to move"); return; }
-  sheet(`<h3>Rain day</h3><div class="sub">Push ${d===TODAY()?"today's":uk(d)+"'s"} ${list.length} remaining ${list.length===1?"job":"jobs"} forward. Round order stays as it is.</div>
-    <label>Shift by</label>
-    <select id="rainN"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="7">1 week</option></select>
-    <button class="btn primary" style="width:100%" onclick="doRain()">Move ${pl(list.length,"job")}</button>`);
+  UI.rain={when:"next",keep:true};
+  sheet(`<h3>Rain day</h3><div class="sub">${pl(list.length,"job")} left ${d===TODAY()?"today":"on "+uk(d)}. Round order stays as it is.</div>
+    <label>When will you do them?</label>
+    <div class="seg" id="rainWhen">
+      <button data-v="next" class="on" onclick="rainPick('when','next')">Next working day</button>
+      <button data-v="1" onclick="rainPick('when','1')">Tomorrow</button>
+      <button data-v="pick" onclick="rainPick('when','pick')">Pick a date</button>
+    </div>
+    <input id="rainDate" type="date" min="${addD(d,1)}" value="${addD(d,7)}" style="display:none" onchange="rainPreview()">
+    <label>After that, when are they next due?</label>
+    <div class="seg" id="rainKeep">
+      <button data-v="1" class="on" onclick="rainPick('keep',true)">Keep normal schedule</button>
+      <button data-v="0" onclick="rainPick('keep',false)">Start fresh from new day</button>
+    </div>
+    <div class="preview" id="rainPrev"></div>
+    <button class="btn primary" style="width:100%" id="rainGo" onclick="doRain()">Move ${pl(list.length,"job")}</button>`);
+  rainPreview();
+}
+function nextWorkingDay(d){ let n=addD(d,1); while([0,6].includes(dt(n).getDay())) n=addD(n,1); return n; }
+function rainTarget(){
+  const d=UI.day||TODAY(), r=UI.rain||{when:"next"};
+  if(r.when==="pick"){ const v=$("rainDate")&&$("rainDate").value; return v&&dt(v)>dt(d)?v:""; }
+  if(r.when==="next") return nextWorkingDay(d);
+  return addD(d,+r.when);
+}
+function rainPick(k,v){
+  UI.rain=UI.rain||{when:"next",keep:true}; UI.rain[k]=v;
+  const box=$(k==="when"?"rainWhen":"rainKeep"), key=k==="when"?String(v):(v?"1":"0");
+  if(box) [...box.children].forEach(b=>b.classList.toggle("on",b.dataset.v===key));
+  if(k==="when"&&$("rainDate")) $("rainDate").style.display=v==="pick"?"":"none";
+  rainPreview();
+}
+function rainPreview(){
+  const el=$("rainPrev"); if(!el) return;
+  const t=rainTarget(), r=UI.rain||{};
+  if(!t){ el.textContent="Pick a date after "+uk(UI.day||TODAY())+"."; return; }
+  el.textContent="Moving to "+shortD(t)+". "+(r.keep
+    ?"Their next clean after that stays on the usual schedule, as if it hadn't rained."
+    :"Their next clean after that counts on from "+uk(t)+".");
 }
 function doRain(){
-  const n=+$("rainN").value, d=UI.day||TODAY(), list=orderedDay(d);
+  const d=UI.day||TODAY(), list=orderedDay(d), target=rainTarget(), keep=!!(UI.rain&&UI.rain.keep);
+  if(!target){ toast("Pick a date first"); return; }
+  const n=Math.round((dt(target)-dt(d))/864e5);
   closeSheet(); snap();
-  const target=addD(d,n);
-  list.forEach(j=>{ j.next=target; entry(j,{t:"rain",d,a:0,n:"Rain day — moved "+pl(n,"day")}); });
+  list.forEach(j=>{
+    if(j.weeks>0) j.anchor=keep?(j.anchor||j.next||d):null;
+    j.next=target;
+    entry(j,{t:"rain",d,a:0,n:"Rain day — moved "+pl(n,"day")+(keep?" (kept schedule)":" (fresh start)")});
+  });
   save(); render();
   toast(pl(list.length,"job")+" moved to "+uk(target),"Undo",undo);
 }
