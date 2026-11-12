@@ -7,6 +7,7 @@ on:
       - gleam-2-native
     paths:
       - "android/**"
+      - "tests/**"
       - ".github/workflows/gleam2-apk.yml"
 
 jobs:
@@ -59,18 +60,27 @@ jobs:
           PY
           node --check /tmp/gleam.js
 
+      - name: Logic tests (ledger, scheduling, widget sync)
+        run: TZ=Europe/London node tests/gleam-logic.test.js android/app/src/main/assets/index.html
+
+      - name: Read app version
+        id: version
+        run: echo "name=$(grep -oP 'versionName = "\K[^"]+' android/app/build.gradle.kts)" >> "$GITHUB_OUTPUT"
+
       - name: Compile only (no signing key)
         if: steps.signing.outputs.present != 'true'
-        run: gradle -p android compileDebugSources --stacktrace
+        run: gradle -p android compileReleaseSources --stacktrace
 
-      - name: Build debug APK
+      # Release build: not debuggable (customer data can't be pulled over USB),
+      # signed with the same stable key so it installs over earlier alphas.
+      - name: Build APK
         if: steps.signing.outputs.present == 'true'
-        run: gradle -p android assembleDebug --stacktrace
+        run: gradle -p android assembleRelease --stacktrace
 
       - name: Upload APK
         if: steps.signing.outputs.present == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Gleam-2-alpha2
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Gleam-${{ steps.version.outputs.name }}
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error

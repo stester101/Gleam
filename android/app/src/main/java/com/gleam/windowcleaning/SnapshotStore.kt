@@ -21,6 +21,7 @@ data class GleamSnapshot(
 object SnapshotStore {
     private const val PREFS = "gleam_native"
 
+    @Synchronized
     fun updateFromState(context: Context, stateJson: String) {
         runCatching {
             val state = JSONObject(stateJson)
@@ -109,9 +110,15 @@ object SnapshotStore {
 
     /** Recomputes today/tomorrow from the stored state, so a new day is reflected
      *  even when Gleam has not been opened since yesterday. */
+    @Synchronized
     fun refresh(context: Context) {
+        // cheap when nothing changed: only recompute for a new day or new state revision
+        val key = LocalDate.now().toString() + ":" + NativeStateStore.revision(context)
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (prefs.getString("refreshKey", "") == key) return
         val state = NativeStateStore.state(context)
         if (state.isNotBlank()) updateFromState(context, state)
+        prefs.edit().putString("refreshKey", key).apply()
     }
 
     fun read(context: Context): GleamSnapshot {

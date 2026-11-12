@@ -62,6 +62,22 @@ Settings shows Notifications and Widgets groups in the APK only.
 - **Notifications:** master switch; Today briefing (jobs due, next address) at a chosen time; Tomorrow briefing (job count, rounds) at a chosen time; left-behind warning. Delivery time is approximate (WorkManager). Nothing is sent when there is nothing relevant.
 - **Widgets:** Today (remaining count, next and following jobs, left-behind); Next job (address, price); Quick Complete (next job with Paid / Not paid).
 
+## Data safety
+
+- Gleam never starts on seed data if its database can't be read; it shows a "couldn't open its data" screen instead.
+- Saves are flushed when the app is backgrounded, and a job completion is saved before its animation.
+- **Automatic copies** (Settings → Data & backup): the last 7 days, plus copies taken before any restore or reset, are kept in app storage. A weekly `gleam-auto-backup-YYYY-MM-DD.json` is written to `Downloads/Gleam`. If the database is found empty, Gleam offers the newest copy.
+- Android backup only includes the automatic copies and reminder settings, not the live WebView database.
+- JSON restore validates and trial-opens a backup before replacing anything.
+
+## Change requests
+
+The ✎ icon in the header lets Ant type a change request. Requests are stored in the data (and backups) and sent to a Google Form when online; the Form's response Sheet is the review queue. Fill `REQUEST_FORM` in `index.html` from the Form's pre-filled link. Until then requests queue on the phone.
+
+## Tests
+
+`TZ=Europe/London node tests/gleam-logic.test.js android/app/src/main/assets/index.html` covers widget op replay, ledger balance, recurrence across clock changes, on-request jobs and money parsing. CI runs it before building.
+
 ## Visual refresh
 
 The refresh is intentionally conservative:
@@ -82,15 +98,17 @@ GitHub Actions builds the debug APK whenever Android files change on `gleam-2-na
 
 Signing: the APK is signed with a stable key stored as the `GLEAM_DEBUG_KEYSTORE_B64` repository secret (base64 PKCS12, alias `androiddebugkey`, password `android`). Without the secret, CI only compiles and produces no APK, so the signing identity can never rotate silently. The Alpha 2 key was held in an Actions cache that expired, so the first build signed with the secret key needs one backup → uninstall → install → restore on the phone.
 
-Local equivalent:
+CI builds a non-debuggable **release** APK signed with the stable key, named `Gleam-<versionName>`. Version lives only in `android/app/build.gradle.kts` (the app reads it via `BuildConfig`).
+
+Local equivalent (needs the keystore at `~/.android/debug.keystore`):
 
 ```bash
-gradle -p android assembleDebug
+gradle -p android assembleRelease
 ```
 
 APK output:
 
-`android/app/build/outputs/apk/debug/app-debug.apk`
+`android/app/build/outputs/apk/release/app-release.apk`
 
 
 ## Alpha 2 changes

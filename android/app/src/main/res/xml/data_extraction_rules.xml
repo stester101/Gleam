@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: back up only the recovery copies and reminder settings. The live WebView
+     database is excluded (a mid-write copy can be torn); after a restore Gleam finds its
+     store empty and offers the newest recovery copy. -->
+<data-extraction-rules>
+  <cloud-backup>
+    <include domain="file" path="recovery/" />
+    <include domain="sharedpref" path="gleam_native.xml" />
+  </cloud-backup>
+  <device-transfer>
+    <include domain="file" path="recovery/" />
+    <include domain="sharedpref" path="gleam_native.xml" />
+  </device-transfer>
+</data-extraction-rules>

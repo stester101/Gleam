@@ -121,5 +121,5 @@ class GleamNativeBridge(
     }
 
     @JavascriptInterface
-    fun appVersion(): String = "2.0.0-alpha2"
+    fun appVersion(): String = BuildConfig.VERSION_NAME
 }

@@ -7,6 +7,24 @@ import android.widget.Toast
 
 class QuickCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val pending = goAsync()
+        val appContext = context.applicationContext
+        Thread {
+            try {
+                handle(appContext, intent)
+            } finally {
+                pending.finish()
+            }
+        }.start()
+    }
+
+    private fun toast(context: Context, message: String) {
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun handle(context: Context, intent: Intent) {
         val jobId = intent.getStringExtra(EXTRA_JOB_ID).orEmpty()
         val paid = intent.getBooleanExtra(EXTRA_PAID, false)
         if (jobId.isBlank()) return
@@ -34,7 +52,7 @@ class QuickCompleteReceiver : BroadcastReceiver() {
             NativeStateStore.QuickResult.NOT_DUE -> "Already done"
             NativeStateStore.QuickResult.FAILED -> "Open Gleam and try again"
         }
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        toast(context, message)
     }
 
     companion object {

@@ -443,8 +443,8 @@ body{background:#061a20}
     radial-gradient(110% 62% at 18% -8%,rgba(30,105,115,.50),transparent 58%),
     linear-gradient(180deg,#0b2b33 0%,#071f27 48%,#061a20 100%);
 }
-#app::before{opacity:.28;filter:blur(24px);animation-duration:44s}
-.rain{opacity:.20}
+#app::before{opacity:.28;filter:blur(24px);animation:none}   /* no permanent decorative motion */
+.rain{display:none}
 .glass{
   background:rgba(255,255,255,.05);
   border-color:rgba(255,255,255,.10);
@@ -1177,7 +1177,17 @@ let UI={sched:"plan", window:28, custQ:"", custFilter:"all", custRound:"all", cu
   selDay:null, todayAll:false, todayQ:"", day:null, calMonth:null, calYear:null, calSel:null,
   roundSel:null, histMoney:false};
 UI.day=null;
-function render(){ recalcAll(); pgToday(); pgSchedule(); pgCustomers(); pgMoney(); pgTexts(); nativeBackState(); }
+/* only the visible tab is redrawn; the others are redrawn when opened */
+const PAGES={today:()=>pgToday(),schedule:()=>pgSchedule(),customers:()=>pgCustomers(),money:()=>pgMoney(),texts:()=>pgTexts()};
+const STALE=new Set();
+const currentPage=()=>((document.querySelector(".tab.on")||{}).dataset||{}).p||"today";
+function render(){
+  recalcAll();
+  const cur=currentPage();
+  Object.keys(PAGES).forEach(k=>{ if(k===cur) PAGES[k](); else STALE.add(k); });
+  nativeBackState();
+}
+function renderIfStale(p){ if(STALE.has(p)&&PAGES[p]){ STALE.delete(p); PAGES[p](); } }
 /* predictive back: Android only intercepts back while there is something to close */
 function backTarget(){
   if($("sheet")&&$("sheet").classList.contains("on")) return "sheet";
@@ -3222,6 +3232,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(target==="today"){ if(UI.todayQ){ UI.todayQ=""; pgToday(); } }
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
   const p=$("p-"+target);
+  renderIfStale(target);
   p.classList.add("on");
   p.classList.remove("wipe"); void p.offsetWidth; p.classList.add("wipe");
   document.body.classList.remove("nav-hidden");

@@ -10,12 +10,20 @@ android {
         applicationId = "com.gleam.windowcleaning"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20001
-        versionName = "2.0.0-alpha2"
+        versionCode = 20003
+        versionName = "2.0.0-alpha3"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
         release {
+            // Non-debuggable build signed with the same stable key as alpha builds
+            // (~/.android/debug.keystore restored from the GLEAM_DEBUG_KEYSTORE_B64 secret),
+            // so it installs over them. Swap for a dedicated release key before Play.
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

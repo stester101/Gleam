@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: same policy as data_extraction_rules.xml -->
+<full-backup-content>
+    <include domain="file" path="recovery/" />
+    <include domain="sharedpref" path="gleam_native.xml" />
+</full-backup-content>
