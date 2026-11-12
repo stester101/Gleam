@@ -589,6 +589,10 @@ body.nav-hidden .fab{transform:translateY(84px);opacity:0;pointer-events:none}
 @keyframes compactClean{62%{border-color:rgba(105,214,223,.65)}100%{transform:translateX(14px) scale(.98);opacity:0;height:0;padding-top:0;padding-bottom:0;margin-bottom:0}}
 @media (prefers-reduced-motion:reduce){.waterfx{display:none!important}}
 
+.reqlist{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.reqrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--dim)}
+.reqrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reqrow b{flex:0 0 auto;font-size:12px;font-weight:600}
 </style>
 </head>
 <body>
@@ -598,6 +602,7 @@ body.nav-hidden .fab{transform:translateY(84px);opacity:0;pointer-events:none}
     <div class="brandrow">
       <div class="brand"><h1>Gleam</h1><small id="bizname">Ant Hardman</small></div>
       <div class="hbtns">
+        <button class="iconbtn" onclick="openRequests()" aria-label="Ask for a change">✎</button>
         <button class="iconbtn" id="sunBtn" onclick="toggleOutdoor()" aria-label="Outdoor mode">☀</button>
         <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
       </div>
@@ -771,6 +776,50 @@ async function receiveNativeState(raw){
   }finally{ nativeApplying=false; }
 }
 window.receiveNativeState=receiveNativeState;
+
+/* ===== Change requests (Ant → Simon) =====
+   Saved in S.requests, so they're in every backup, then posted to a Google Form whose
+   response sheet is the review queue. Offline they stay queued and retry later.
+   Fill REQUEST_FORM from the Form's pre-filled link; empty = queue locally only. */
+const REQUEST_FORM={action:"",text:"",context:""};
+function openRequests(){
+  const list=(S.requests||[]).slice(-5).reverse();
+  sheet(`<h3>Ask for a change</h3><div class="sub">What would you like changed in Gleam?</div>
+    <textarea id="reqText" rows="4" placeholder="e.g. make the text smaller"></textarea>
+    <button class="btn" style="width:100%;margin-top:10px;padding:13px" onclick="submitRequest()">Send</button>
+    ${list.length?`<div class="reqlist">${list.map(r=>`<div class="reqrow"><span>${esc(r.text)}</span><b>${r.sent?"Sent":"Waiting"}</b></div>`).join("")}</div>`:""}`);
+  setTimeout(()=>{ const t=$("reqText"); if(t) t.focus(); },250);
+}
+function submitRequest(){
+  const text=(($("reqText")||{}).value||"").trim();
+  if(!text){ toast("Type what you'd like changed"); return; }
+  const tab=((document.querySelector(".tab.on")||{}).dataset||{}).p||"";
+  S.requests=S.requests||[];
+  S.requests.push({id:"q"+Date.now().toString(36),at:new Date().toISOString(),tab,text,sent:false});
+  save(); closeSheet(); nativeHaptic();
+  toast("Thanks — request saved");
+  sendRequests();
+}
+let requestsSending=false;
+async function sendRequests(){
+  if(requestsSending||!REQUEST_FORM.action||!S||!S.requests) return;
+  const pending=S.requests.filter(r=>!r.sent);
+  if(!pending.length) return;
+  requestsSending=true;
+  let ver="web"; if(NATIVE){ try{ ver=GleamNative.appVersion(); }catch(_){} }
+  try{
+    for(const r of pending){
+      const body=new URLSearchParams();
+      body.set(REQUEST_FORM.text,r.text);
+      body.set(REQUEST_FORM.context,`${r.at.slice(0,16).replace("T"," ")} · ${r.tab||"?"} · ${ver} · ${r.id}`);
+      await fetch(REQUEST_FORM.action,{method:"POST",mode:"no-cors",body});
+      r.sent=true;
+    }
+  }catch(_){ /* offline: stays queued */ }
+  finally{ requestsSending=false; save(); }
+}
+window.addEventListener("online",()=>sendRequests());
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) sendRequests(); });
 /* ============================================================
    SEED DATA — from the Aworka export (Ben's rounds folded in)
    [jobId, name, address, round, price, weeks, nextDue, owed, phone, balanceDate, priceSince]
@@ -3087,6 +3136,7 @@ try{
   Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!S.settings.tpl[k]) S.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
   if(!S.rounds) S.rounds=[];
   if(!S.dayOrders) S.dayOrders={};
+  if(!S.requests) S.requests=[];
   UI.day=TODAY(); UI.calSel=TODAY();
   recalcAll();
   document.body.classList.toggle("outdoor",!!S.settings.outdoor);
@@ -3099,6 +3149,7 @@ try{
   if(!stored) save();
   nativeBootDone();
   if(NATIVE){ try{ receiveNativeState(GleamNative.pendingNativeState()); }catch(_){} }
+  sendRequests();
 })();
 
 </script>
