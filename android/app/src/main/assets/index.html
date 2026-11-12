@@ -1065,8 +1065,8 @@ function savedLine(ok){
   const t=S.meta.lastSaved?new Date(S.meta.lastSaved).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";
   el.innerHTML=t?"<b>Saved "+t+"</b> · everything's on this phone":"<b>Saved on this phone</b>";
 }
-function snap(){ UNDO={jobs:JSON.stringify(S.jobs), orders:JSON.stringify(S.dayOrders||{})}; }
-function undo(){ if(!UNDO) return; S.jobs=JSON.parse(UNDO.jobs); S.dayOrders=JSON.parse(UNDO.orders||"{}"); UNDO=null; SEL={ctx:null,ids:[]}; save(); render(); toast("Undone"); }
+function snap(){ UNDO={jobs:JSON.stringify(S.jobs), orders:JSON.stringify(S.dayOrders||{}), rounds:JSON.stringify(S.rounds||[]), settings:JSON.stringify(S.settings)}; }
+function undo(){ if(!UNDO) return; S.jobs=JSON.parse(UNDO.jobs); S.dayOrders=JSON.parse(UNDO.orders||"{}"); if(UNDO.rounds) S.rounds=JSON.parse(UNDO.rounds); if(UNDO.settings) S.settings=JSON.parse(UNDO.settings); UNDO=null; SEL={ctx:null,ids:[]}; save(); render(); toast("Undone"); }
 
 /* migrate an old-shape save (jobs.round string, flat bal, old hist types) into the new ledger + rounds-registry shape */
 function migrateState(v){
@@ -1324,7 +1324,7 @@ function doBulkMove(ctx,keep){
   if(!target){ toast("Pick a date"); return; }
   const js=selJobs(); if(!js.length) return;
   snap();
-  js.forEach(j=>{ if(j.weeks>0) j.anchor=(keep&&j.next)?j.next:null; if(!j.weeks&&!j.next) j.anchor=null; j.next=target; });
+  js.forEach(j=>{ if(j.weeks>0) j.anchor=keep?(j.anchor||j.next||null):null; if(!j.weeks&&!j.next) j.anchor=null; j.next=target; });
   const n=js.length; selExit(ctx,true); closeSheet(); save(); render();
   toast(n+" moved to "+uk(target),"Undo",undo);
 }
@@ -1676,7 +1676,11 @@ function doPart(id){
   const how=$("partHow").value, d=($("partDate")&&$("partDate").value)||UI.day||TODAY();
   closeSheet(); finishDone(id,"part",amt,how,d);
 }
-const money=v=>Math.round((parseFloat(String(v).replace(/[^0-9.\-]/g,""))||0)*100)/100;
+const money=v=>{
+  let t=String(v==null?"":v).trim();
+  if(!t.includes(".")&&/\d,\d{1,2}$/.test(t)) t=t.replace(/,(\d{1,2})$/,".$1");   // comma used as the decimal point
+  return Math.round((parseFloat(t.replace(/[^0-9.\-]/g,""))||0)*100)/100;
+};
 const payMethods=sel=>["Cash","Bank transfer","Card","GoCardless"].map(p=>`<option ${sel===p?"selected":""}>${p}</option>`).join("");
 function moveToday(id,dir){
   const d=UI.day||TODAY();
@@ -2862,7 +2866,7 @@ function moveSheet(kind,id,fromDate){
 function doMove(kind,id,cur,keep){
   const target=$("mvDate").value; if(!target){ toast("Pick a date"); return; }
   snap();
-  const apply=j=>{ if(j.weeks>0){ if(keep && j.next) j.anchor=j.next; else j.anchor=null; } j.next=target; };
+  const apply=j=>{ if(j.weeks>0){ j.anchor=keep?(j.anchor||j.next||null):null; } j.next=target; };
   if(kind==="job"){ const j=S.jobs.find(x=>x.id===id); if(j) apply(j); }
   else { activeJobs().filter(j=>j.roundId===id&&j.next===cur).forEach(apply); }
   save(); render(); closeSheet(); toast("Moved to "+uk(target),"Undo",undo);
@@ -2972,7 +2976,7 @@ function importCSV(input){
   const file=input.files[0]; if(!file) return;
   const r=new FileReader();
   r.onload=()=>{
-    let added=0,updated=0,unchanged=0,skipped=0;
+    let added=0,updated=0,unchanged=0,skipped=0; const balDiffs=[];
     try{
       const rows=parseCSV(r.result);
       const head=rows.shift().map(h=>h.trim());
@@ -2986,7 +2990,8 @@ function importCSV(input){
         const freqTxt=g("Frequency");
         const m=freqTxt.match(/(\d+)\s*weekly/i);
         const weeks=m?+m[1]:0;
-        const balRaw=parseFloat(g("Balance"))||0;
+        const has=n=>c(n)>=0&&g(n)!=="";
+        const balRaw=money(g("Balance"));
         const openingBal=-balRaw; // Aworka convention: negative = owes
         const roundNameRaw=(g("Round")||"Unassigned").replace(/^Ben\s+/,"");
         const roundId=ensureRound(roundNameRaw).id;
@@ -2995,7 +3000,7 @@ function importCSV(input){
           pc:g("Job Postcode")||g("Customer Postcode"),
           ph:g("Customer Phone 1")||g("Customer Phone 2")||g("Job Phone 1"),
           email:g("Customer Email"), roundId,
-          seq:+g("Seq Round Index")||99, price:parseFloat(g("Price"))||0, weeks,
+          seq:+g("Seq Round Index")||99, price:money(g("Price")), weeks,
           next:g("Next Due"), last:g("Last Done/Skipped"),
           ps:g("Price Since"), notes:g("Notes")||g("Customer Notes"),
           status:(g("Status")||"Active").toLowerCase()==="active"?"active":"archived"
@@ -3010,27 +3015,36 @@ function importCSV(input){
           added++;
         }else{
           let changed=false;
-          if(+ex.price!==+inc.price){ entry(ex,{t:"price",a:0,from:+ex.price||0,to:+inc.price||0,n:fmt(+ex.price||0)+" → "+fmt(+inc.price||0)+" (CSV import)"}); ex.price=inc.price; changed=true; }
-          ["seq","weeks"].forEach(k=>{ if(+ex[k]!==+inc[k]){ ex[k]=inc[k]; changed=true; } });
+          if(has("Price")&&+ex.price!==+inc.price){ entry(ex,{t:"price",a:0,from:+ex.price||0,to:+inc.price||0,n:fmt(+ex.price||0)+" → "+fmt(+inc.price||0)+" (CSV import)"}); ex.price=inc.price; changed=true; }
+          if(has("Seq Round Index")&&+ex.seq!==+inc.seq){ ex.seq=inc.seq; changed=true; }
+          if(has("Frequency")&&+ex.weeks!==+inc.weeks){ ex.weeks=inc.weeks; changed=true; }
           ["name","addr","pc","ph","email","notes","status"].forEach(k=>{
             if(inc[k] && String(ex[k]||"")!==String(inc[k])){ ex[k]=inc[k]; changed=true; }
           });
-          if(inc.next && ex.next!==inc.next){ ex.next=inc.next; changed=true; }
-          if(inc.last && ex.last!==inc.last){ ex.last=inc.last; changed=true; }
-          if(ex.roundId!==roundId){ ex.roundId=roundId; changed=true; }
-          const d2=Math.round((openingBal-ex.bal)*100)/100;
-          if(d2!==0){ log(ex,"adjustment",d2,"CSV import adjustment"); recalcBal(ex); changed=true; }
+          // only take the CSV's dates if Gleam hasn't done newer work on this job
+          const csvNewer=!ex.last||(inc.last&&inc.last>=ex.last);
+          if(csvNewer){
+            if(inc.next && ex.next!==inc.next){ ex.next=inc.next; ex.anchor=null; changed=true; }
+            if(inc.last && ex.last!==inc.last){ ex.last=inc.last; changed=true; }
+          }
+          if(c("Round")>=0&&ex.roundId!==roundId){ ex.roundId=roundId; changed=true; }
+          // balance differences are never applied silently: payments taken in Gleam may be newer
+          const d2=c("Balance")>=0?Math.round((openingBal-ex.bal)*100)/100:0;
+          if(d2!==0) balDiffs.push({id:ex.id,d2});
           changed?updated++:unchanged++;
         }
       });
       resequenceMissing();
+      CSV_BAL=balDiffs;
       save(); render();
       sheet(`<h3>Import finished</h3><div class="sub">${file.name}</div>
         <div class="kv"><span>Added</span><b style="color:var(--clean)">${added}</b></div>
         <div class="kv"><span>Updated</span><b style="color:var(--aqua)">${updated}</b></div>
         <div class="kv"><span>Unchanged</span><b>${unchanged}</b></div>
         <div class="kv"><span>Skipped (no ID or address)</span><b>${skipped}</b></div>
-        <div class="preview" style="margin-top:14px">${added+updated===0?"No changes — every row already matched what's in Gleam.":"History and payments were kept for every existing job."}</div>
+        <div class="kv"><span>Balances that differ</span><b style="color:var(--suds)">${balDiffs.length}</b></div>
+        <div class="preview" style="margin-top:14px">${added+updated===0&&!balDiffs.length?"No changes — every row already matched what's in Gleam.":"History and payments were kept for every existing job."}${balDiffs.length?" "+balDiffs.length+" balance"+(balDiffs.length===1?" in the file differs":"s in the file differ")+" from Gleam. Gleam's are kept unless you apply the file's.":""}</div>
+        ${balDiffs.length?`<div class="acts" style="margin-top:10px"><button class="btn" onclick="applyCsvBalances()">Use the file's balances (${balDiffs.length})</button></div>`:""}
         <div class="acts"><button class="btn primary" onclick="closeSheet()">Done</button>
           <button class="btn ghost" onclick="undo();closeSheet()">Undo import</button></div>`);
     }catch(e){
@@ -3039,6 +3053,12 @@ function importCSV(input){
     input.value="";
   };
   r.readAsText(file);
+}
+let CSV_BAL=[];
+function applyCsvBalances(){
+  CSV_BAL.forEach(b=>{ const j=S.jobs.find(x=>x.id===b.id); if(j){ log(j,"adjustment",b.d2,"CSV import adjustment"); recalcBal(j); } });
+  toast("Applied "+CSV_BAL.length+" balance change"+(CSV_BAL.length===1?"":"s"));
+  CSV_BAL=[]; save(); render(); closeSheet();
 }
 function resequenceMissing(){
   const by={};
@@ -3264,6 +3284,8 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden) onNative
   let freshInstall=!(stored&&stored.jobs&&stored.jobs.length);
   S=normaliseState(freshInstall?seed():migrateState(stored));
   UI.day=TODAY(); UI.calSel=TODAY(); DAY_SEEN=TODAY();
+  // continue entry ordering after the stored history (native widget entries use clock values, ignore those)
+  S.jobs.forEach(j=>j.hist.forEach(h=>{ const n=+h.seqn||0; if(n<1e12&&n>=HSEQ) HSEQ=n+1; }));
   recalcAll();
   document.body.classList.toggle("outdoor",!!S.settings.outdoor);
   $("sunBtn").textContent=S.settings.outdoor?"🌙":"☀";
