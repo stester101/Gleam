@@ -20,7 +20,7 @@ The current web app on `main` is unchanged.
 
 The Android app packages the current production `index.html` inside a native Android shell. This avoids feature regressions while adding Android capabilities around it.
 
-The web layer continues to own Gleam's business logic and IndexedDB data. A small JavaScript bridge sends an operational snapshot to Android whenever Gleam saves.
+The web layer continues to own Gleam's business logic and IndexedDB data. A JavaScript bridge mirrors the full state to Android whenever Gleam saves.
 
 The native layer provides:
 
@@ -28,11 +28,16 @@ The native layer provides:
 - native JSON/CSV export into `Downloads/Gleam`;
 - Android file picker for Gleam JSON and Aworka CSV import;
 - completion haptics;
-- Today home-screen widget;
-- optional morning and tomorrow notifications;
-- left-behind work surfaced in the morning notification.
+- three home-screen widgets (Today, Next job, Quick Complete);
+- configurable work-reminder notifications (WorkManager, not exact alarms).
 
 No earnings figures are used in widgets or notifications.
+
+### Widget changes and sync
+
+Quick Complete writes a clean into the native mirror and queues a per-job operation. The mirror ignores web syncs while operations are pending. When Gleam next opens, the web layer waits for boot, then replays each operation onto its own state (one clean per job per day, keyed by entry id). It saves to IndexedDB and only then acknowledges the operations it applied. Widget changes are never applied by replacing the whole web state.
+
+Quick Complete only completes a job that is due today or left behind and has not already been done today. Widgets and the reminder worker recompute today/tomorrow from the stored state, so a new day shows correctly even if Gleam has not been opened.
 
 ## Existing Gleam migration
 
@@ -52,27 +57,10 @@ The existing `migrateState()` and ledger migration code is retained inside the A
 
 ## Native extras
 
-In Settings, APK builds show a small **App extras** section.
+Settings shows Notifications and Widgets groups in the APK only.
 
-### Work reminders
-
-Optional. When enabled:
-
-- 07:00: number of jobs today, next address, and left-behind count when relevant.
-- 18:00: number of jobs tomorrow and the affected rounds.
-
-No notification is sent when there is nothing relevant.
-
-### Today widget
-
-Shows:
-
-- number of remaining jobs today;
-- next job;
-- up to two following jobs;
-- left-behind count when today itself is empty.
-
-Tapping the widget opens Gleam. Jobs cannot be completed directly from the widget because the existing completion flow records payment status.
+- **Notifications:** master switch; Today briefing (jobs due, next address) at a chosen time; Tomorrow briefing (job count, rounds) at a chosen time; left-behind warning. Delivery time is approximate (WorkManager). Nothing is sent when there is nothing relevant.
+- **Widgets:** Today (remaining count, next and following jobs, left-behind); Next job (address, price); Quick Complete (next job with Paid / Not paid).
 
 ## Visual refresh
 
@@ -91,6 +79,8 @@ Layout and navigation remain in their existing positions.
 ## Build
 
 GitHub Actions builds the debug APK whenever Android files change on `gleam-2-native`.
+
+Signing: the APK is signed with a stable key stored as the `GLEAM_DEBUG_KEYSTORE_B64` repository secret (base64 PKCS12, alias `androiddebugkey`, password `android`). Without the secret, CI only compiles and produces no APK, so the signing identity can never rotate silently. The Alpha 2 key was held in an Actions cache that expired, so the first build signed with the secret key needs one backup → uninstall → install → restore on the phone.
 
 Local equivalent:
 
