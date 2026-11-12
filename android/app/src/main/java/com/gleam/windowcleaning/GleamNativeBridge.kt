@@ -32,6 +32,11 @@ class GleamNativeBridge(
     }
 
     @JavascriptInterface
+    fun acknowledgeNativeOps(idsJson: String) {
+        NativeStateStore.acknowledgeOps(activity, idsJson)
+    }
+
+    @JavascriptInterface
     fun haptic() {
         activity.performGleamHaptic()
     }

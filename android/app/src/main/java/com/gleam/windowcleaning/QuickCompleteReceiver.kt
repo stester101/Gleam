@@ -11,19 +11,17 @@ class QuickCompleteReceiver : BroadcastReceiver() {
         val paid = intent.getBooleanExtra(EXTRA_PAID, false)
         if (jobId.isBlank()) return
 
-        val ok = NativeStateStore.quickComplete(context, jobId, paid)
-        if (ok) {
-            GleamWidgetProvider.updateAll(context)
-            NextJobWidgetProvider.updateAll(context)
-            QuickCompleteWidgetProvider.updateAll(context)
-            Toast.makeText(
-                context,
-                if (paid) "Cleaned · paid" else "Cleaned · not paid",
-                Toast.LENGTH_SHORT
-            ).show()
-        } else {
-            Toast.makeText(context, "Open Gleam and try again", Toast.LENGTH_SHORT).show()
+        val result = NativeStateStore.quickComplete(context, jobId, paid)
+        if (result != NativeStateStore.QuickResult.DONE) SnapshotStore.refresh(context)
+        GleamWidgetProvider.updateAll(context)
+        NextJobWidgetProvider.updateAll(context)
+        QuickCompleteWidgetProvider.updateAll(context)
+        val message = when (result) {
+            NativeStateStore.QuickResult.DONE -> if (paid) "Cleaned · paid" else "Cleaned · not paid"
+            NativeStateStore.QuickResult.NOT_DUE -> "Already done"
+            NativeStateStore.QuickResult.FAILED -> "Open Gleam and try again"
         }
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     companion object {

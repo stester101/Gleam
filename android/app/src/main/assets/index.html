@@ -720,18 +720,55 @@ function requestGleamWidget(type){
   if(!NATIVE) return;
   try{ GleamNative.requestWidget(type||"today"); }catch(_){}
 }
+/* Widget changes arrive as per-job operations and are replayed onto the current state,
+   never by replacing it, so app edits made since can't be overwritten. Replay is
+   idempotent (entry id + one clean per job per day). Waits for boot so a cold-start
+   delivery can't race the IndexedDB load. Only saved operations are acknowledged. */
+let nativeBootDone=null;
+const nativeBooted=new Promise(r=>nativeBootDone=r);
+let nativeApplying=false;
+function applyNativeOp(op){
+  const e=op&&op.entry, j=e&&S.jobs.find(x=>x.id===op.job);
+  if(!j||e.t!=="clean"||!e.d) return false;
+  j.hist=j.hist||[];
+  if(j.hist.some(h=>h.id===e.id||(h.t==="clean"&&h.d===e.d))) return false;
+  j.last=e.d;
+  advanceNext(j,e.d);
+  j.hist.push({id:e.id,d:e.d,seqn:HSEQ++,t:"clean",a:+e.a||0,p:+e.p||0,m:e.m||"",n:e.n||""});
+  recalcBal(j);
+  return true;
+}
 async function receiveNativeState(raw){
   if(!NATIVE||!raw) return;
+  await nativeBooted;
+  if(nativeApplying) return;
+  nativeApplying=true;
   try{
-    const incoming=migrateState(JSON.parse(raw));
-    S=incoming;
-    recalcAll();
-    await Store.set(S);
+    let data=null;
+    try{ data=JSON.parse(raw); }catch(_){}
+    if(data&&Array.isArray(data.ops)){
+      let applied=0;
+      data.ops.forEach(op=>{ if(applyNativeOp(op)) applied++; });
+      if(await Store.set(S)===false){ toast("Couldn't save home-screen update — will retry"); return; }
+      try{ GleamNative.acknowledgeNativeOps(JSON.stringify(data.ops.map(o=>o&&o.id))); }catch(_){}
+      render(); nativeSync();
+      if(applied) toast(applied===1?"Home-screen update synced":applied+" home-screen updates synced");
+      return;
+    }
+    if(data&&Array.isArray(data.jobs)){   // legacy Alpha 2 full-state payload
+      S=migrateState(data); recalcAll();
+      if(await Store.set(S)===false){ toast("Couldn't save home-screen update — will retry"); return; }
+      try{ GleamNative.acknowledgeNativeState(); }catch(_){}
+      render(); nativeSync(); toast("Home-screen update synced");
+      return;
+    }
+    // unreadable: drop it so it can't block widget syncing forever
     try{ GleamNative.acknowledgeNativeState(); }catch(_){}
-    render();
     nativeSync();
-    toast("Home-screen update synced");
-  }catch(_){}
+    toast("A home-screen update couldn't be read — check today's jobs");
+  }catch(_){
+    toast("Home-screen update failed — reopen Gleam");
+  }finally{ nativeApplying=false; }
 }
 window.receiveNativeState=receiveNativeState;
 /* ============================================================
@@ -3060,6 +3097,8 @@ try{
   setupSheetSwipe();
   setupAutoHideNav();
   if(!stored) save();
+  nativeBootDone();
+  if(NATIVE){ try{ receiveNativeState(GleamNative.pendingNativeState()); }catch(_){} }
 })();
 
 </script>
