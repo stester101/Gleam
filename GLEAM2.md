@@ -154,3 +154,9 @@ Recommended production hardening:
 4. Add automated tests for schedule advancement, ledger balance calculation, old-backup migration, and widget quick-complete transactions.
 5. Keep WorkManager for non-exact reminders; only move to AlarmManager if exact-clock notification delivery becomes a real requirement.
 6. Add a native data-integrity screen only if support/debugging becomes necessary; do not add more day-to-day UI.
+
+## Rollback to the previous version
+
+The APK carries the previous release's page in `android/app/src/main/assets/previous/` (`index.html`, `fonts/`, `VERSION.txt`). Settings → App version → "Switch to previous version" reloads the app on that page (same storage, so jobs and payments carry over; a recovery copy is saved first). A yellow bar on the previous page offers "Back to newest".
+
+**Release process:** before changing the app for a new release, copy the last shipped `assets/index.html` and `assets/fonts/` into `assets/previous/` and put its version name in `previous/VERSION.txt`. Data changes must stay backwards-compatible (add fields, never rename or remove), so the previous page can still read today's data.

@@ -66,6 +66,30 @@ class MainActivity : ComponentActivity() {
     fun notificationsAllowed(): Boolean =
         NotificationManagerCompat.from(this).areNotificationsEnabled()
 
+    // ---- Version rollback: the APK also carries the previous release's page ----
+    private val versionPrefs by lazy { getSharedPreferences("gleam_version", MODE_PRIVATE) }
+
+    fun hasPreviousVersion(): Boolean =
+        runCatching { assets.open("previous/index.html").close(); true }.getOrDefault(false)
+
+    fun previousVersionName(): String =
+        runCatching { assets.open("previous/VERSION.txt").bufferedReader().use { it.readText().trim() } }.getOrDefault("")
+
+    fun currentVersionName(): String =
+        runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "" }.getOrDefault("")
+
+    fun usingPreviousVersion(): Boolean =
+        versionPrefs.getBoolean("usePrevious", false) && hasPreviousVersion()
+
+    private fun pageUrl(): String =
+        if (usingPreviousVersion()) "https://appassets.androidplatform.net/assets/previous/index.html"
+        else "https://appassets.androidplatform.net/assets/index.html"
+
+    fun switchVersion(previous: Boolean) {
+        versionPrefs.edit().putBoolean("usePrevious", previous && hasPreviousVersion()).apply()
+        runOnUiThread { webView.loadUrl(pageUrl()) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
@@ -105,6 +129,7 @@ class MainActivity : ComponentActivity() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     deliverPendingNativeState()
+                    if (url?.contains("/assets/previous/") == true) view?.evaluateJavascript(PREVIOUS_BANNER_JS, null)
                 }
 
                 override fun shouldOverrideUrlLoading(
@@ -181,7 +206,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (savedInstanceState == null) {
-            webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+            webView.loadUrl(pageUrl())
         } else {
             webView.restoreState(savedInstanceState)
         }
@@ -250,5 +275,21 @@ class MainActivity : ComponentActivity() {
         webView.removeJavascriptInterface("GleamNative")
         webView.destroy()
         super.onDestroy()
+    }
+
+    companion object {
+        /** Shown on top of the previous version's page, so Ant can always get back to the newest one. */
+        const val PREVIOUS_BANNER_JS = """
+(function(){
+  if(document.getElementById('gleamPrevBar')) return;
+  var b=document.createElement('div'); b.id='gleamPrevBar';
+  b.style.cssText='position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 6px);z-index:99999;display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border-radius:14px;background:rgba(245,214,123,.95);color:#2b2000;font:600 13px/1.25 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.4)';
+  b.innerHTML='<span style="flex:1">Using the previous version</span><button style="border:0;border-radius:10px;padding:9px 12px;background:#2b2000;color:#ffe9a8;font:700 13px system-ui,sans-serif">Back to newest</button>';
+  b.querySelector('button').onclick=function(){ try{ GleamNative.useVersion('newest'); }catch(e){} };
+  document.body.appendChild(b);
+  var app=document.getElementById('app');
+  if(app){ app.style.marginTop='58px'; app.style.height='calc(100dvh - 58px)'; }
+})();
+"""
     }
 }

@@ -19,6 +19,20 @@ class GleamNativeBridge(
         }
     }
 
+    /** {"current":"2.0.0-alpha6","previous":"2.0.0-alpha5","usingPrevious":false} */
+    @JavascriptInterface
+    fun versionInfo(): String = org.json.JSONObject()
+        .put("current", activity.currentVersionName())
+        .put("previous", if (activity.hasPreviousVersion()) activity.previousVersionName() else "")
+        .put("usingPrevious", activity.usingPreviousVersion())
+        .toString()
+
+    /** "previous" or "newest" — reloads the page in that version; data is shared. */
+    @JavascriptInterface
+    fun useVersion(which: String) {
+        activity.switchVersion(which == "previous")
+    }
+
     @JavascriptInterface
     fun recoveryList(): String = RecoveryStore.list(activity)
 

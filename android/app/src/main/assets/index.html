@@ -657,6 +657,24 @@ body:has(#sheet.on) .toast{bottom:auto;top:calc(env(safe-area-inset-top) + 14px)
 .swipebg.skip{justify-content:flex-end;background:rgba(245,214,123,.2);color:var(--suds);box-shadow:inset 0 0 0 1px rgba(245,214,123,.35)}
 .swipebg.skip.go{background:rgba(245,214,123,.42);color:#fff}
 body.kb-open nav,body.kb-open .fab{display:none}
+/* ===== UX pass: reach, contrast, calm ===== */
+/* faint labels: 4.5:1 or better on the cards, easier in sunlight */
+#app{--faint:rgba(242,248,248,.64)}
+/* calendar and week strip: seven columns always fit (Sunday was clipped) */
+.grid7,.wkstrip{grid-template-columns:repeat(7,minmax(0,1fr))}
+.grid7>*,.wkstrip>*{min-width:0}
+/* touch targets: 44px or more for anything tapped between doors */
+.card .acts .btn,.payask .btn,.sheet .acts .btn{min-height:44px}
+.citem .acts .btn{min-height:44px}
+.seg button{min-height:44px;min-width:44px}
+.hbtns .iconbtn,.ccard-acts .iconbtn,.compactacts .iconbtn{position:relative}
+.hbtns .iconbtn::after{content:'';position:absolute;inset:-4px}
+.ccard-acts .iconbtn::after,.compactacts .iconbtn::after{content:'';position:absolute;inset:-3px -6px}
+.seg.viewseg button{min-height:44px}
+.calhead .iconbtn,.calhead .rainbtn{position:relative}
+.calhead .iconbtn::after,.calhead .rainbtn::after{content:'';position:absolute;inset:-5px -3px}
+.toast button{min-height:44px;padding:0 10px;margin:-12px -8px -12px 0}
+.stmtoggle{display:inline-block;padding:12px 0 12px 16px;margin:-12px 0}
 </style>
 </head>
 <body>
@@ -1008,6 +1026,8 @@ const DEFAULTS={
     payDetails:"Bank: 09-01-29 / 12345678 (A Hardman). Cash or card also fine.",
     mins:30, freqs:[4,5,8,0], outdoor:false, compactToday:false, compactCustomers:false,
     swipeTabs:true, swipeJobs:true, keepScroll:true, buzz:true,
+    cleanAnim:true,
+    askTwice:true, lateBanner:true, holdHint:true, payChips:true, rainRemember:false, longUndo:false,
     tpl:{
       onway:"Hi {name}, Ant here from {biz}. On my way to {address} now — should be with you shortly.",
       done:"Hi {name}, windows done at {address} today. That's {price} please. {pay} Thanks!",
@@ -1017,7 +1037,14 @@ const DEFAULTS={
   },
   meta:{lastExport:null,lastSaved:null,nudged:false,schemaVersion:2}
 };
-const FEEL_KEYS=["swipeTabs","swipeJobs","keepScroll","buzz"];
+const FEEL_KEYS=["swipeTabs","swipeJobs","keepScroll","buzz","cleanAnim"];
+/* optional extras: on/off switches in Settings → Helpers & prompts */
+const EXTRA_KEYS=["askTwice","lateBanner","holdHint","payChips","rainRemember","longUndo"];
+/* a switch's current value, falling back to its default for older saves */
+const opt=k=>{ const v=(typeof S!=="undefined"&&S&&S.settings)?S.settings[k]:undefined; return typeof v==="boolean"?v:!!DEFAULTS.settings[k]; };
+const reducedMotion=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(_){ return false; } };
+/* the squeegee wipe only plays when it's switched on and the phone isn't set to reduce motion */
+const wipeOn=()=>opt("cleanAnim")&&!reducedMotion();
 
 /* ---- rounds registry ---- */
 function roundsSorted(){ return (S.rounds||[]).slice().sort((a,b)=>a.order-b.order); }
@@ -1424,6 +1451,7 @@ function doBulkComplete(ctx,status,again){
   if(dt(d)>dt(TODAY())) d=TODAY();
   let js=selJobs(); if(!js.length) return;
   const dupes=js.filter(j=>cleanedOn(j,d));
+  if(dupes.length&&!again&&!opt("askTwice")) again="all";
   if(dupes.length&&!again){
     PENDING_BULK={d};
     const when=d===TODAY()?"today":"on "+uk(d);
@@ -1634,7 +1662,7 @@ function pgToday(){
       ${list.length>1&&!picking?`<button class="btn ${reorder?"primary":"ghost"}" aria-pressed="${reorder}" onclick="toggleReorder()">${reorder?"✓ Done":"⇅ Reorder"}</button>`:""}
       ${list.length&&!reorder?`<button class="btn ghost" onclick="rainDay()">☔ Rain</button>`:""}
     </div>
-    ${late.length&&!picking&&!reorder?`<div class="strip slim" onclick="lateSheet()">
+    ${late.length&&!picking&&!reorder&&opt("lateBanner")?`<div class="strip slim" onclick="lateSheet()">
       <span>☂</span><div><b>${pl(late.length,"job")} left behind</b> · ${fmt(late.reduce((s,j)=>s+(+j.price||0),0))}</div>
       <span class="go">Review ›</span></div>`:""}
     <div class="todaysearch">
@@ -1655,7 +1683,7 @@ function pgToday(){
       </div>
       <div class="prog-bar"><i style="width:${pct}%"></i></div>
     </div>`:""}
-    ${reorder?`<div class="holdhint">Move jobs up or down the day. Tap ✓ Done when finished.</div>`:list.length&&!picking?`<div class="holdhint">Hold a job to pick several at once</div>`:""}
+    ${reorder?`<div class="holdhint">Move jobs up or down the day. Tap ✓ Done when finished.</div>`:list.length&&!picking&&opt("holdHint")?`<div class="holdhint">Hold a job to pick several at once</div>`:""}
     ${compact
       ? (spot?compactRow(spot,true,0,list.length):"")+shown.map((j,i)=>compactRow(j,false,i+1,list.length)).join("")
       : (spot?jobCard(spot,true,0,list.length):"")+shown.map((j,i)=>jobCard(j,false,i+1,list.length)).join("")}
@@ -1844,6 +1872,7 @@ const PAY_CHIPS=[["Cash","Cash"],["Bank transfer","Bank"],["Card","Card"]];
 const PAYM={};
 function payChips(id,def){
   def=def||"Cash"; PAYM[id]=def;
+  if(!opt("payChips")) return "";   // switched off: Paid uses how they usually pay
   const opts=PAY_CHIPS.slice(); if(!opts.some(o=>o[0]===def)) opts.push([def,def]);
   return `<div class="paychips" role="radiogroup" aria-label="Paid by">${opts.map(([v,l])=>
     `<button type="button" role="radio" aria-checked="${v===def}" class="${v===def?"on":""}" data-m="${esc(v)}" onclick="event.stopPropagation();pickPayM('${id}',this)">${esc(l)}</button>`).join("")}</div>`;
@@ -1988,7 +2017,7 @@ function calendarView(){
         ${sel.due.length?`<button class="btn ghost" style="flex:1" onclick="daySheet('${UI.calSel}')">Run order</button>`:""}
       </div>
       ${picking?selBar("cal"):""}
-      ${sel.due.length?`${!picking?`<div class="holdhint">Hold a job to pick several at once</div>`:""}
+      ${sel.due.length?`${!picking&&opt("holdHint")?`<div class="holdhint">Hold a job to pick several at once</div>`:""}
         <div class="list glass">${sel.due.map(j=>`<div class="item${selHas(j.id)?" picked":""}" onclick="tapJob('cal','${j.id}')" ${holdAttr("cal",j.id)}>
           ${picking?`<div class="tick${selHas(j.id)?" on":""}">${selHas(j.id)?"✓":""}</div>`:""}
           <div class="grow"><b>${esc(j.addr)}</b><span>${esc(roundName(j))} · ${freqLabel(j.weeks)}${dt(UI.calSel)<dt(TODAY())?" · not done":""}</span></div>
@@ -2075,7 +2104,7 @@ function custListHTML(){
   const picking=selOn("cust");
   const compact=!!S.settings.compactCustomers;
   if(!js.length) return `<div class="empty"><div>🔍</div><b>No match</b>Try a street name, or clear the filter.</div>`;
-  const hint=picking?selBar("cust"):`<div class="holdhint">Hold a customer to pick several at once</div>`;
+  const hint=picking?selBar("cust"):opt("holdHint")?`<div class="holdhint">Hold a customer to pick several at once</div>`:"";
   if(compact){
     return hint+`<div class="${picking?"selmode":""}">`+
       js.slice(0,300).map(j=>compactCustomerRow(j,picking)).join("")+`</div>`;
@@ -2448,7 +2477,7 @@ function pgTexts(){
         `<button class="${UI.txHasNumber===k?"on":""}" onclick="UI.txHasNumber='${k}';pgTexts()">${l}</button>`).join("")}
     </div>
     <div class="preview">${esc(fill(S.settings.tpl[type],sample,list[0]?txDay(sample,type):(type==="remind"?UI.txDate:type==="done"?txDoneDay():"")))}
-      <button class="btn ghost" style="padding:4px 10px;font-size:12px;margin-top:8px" onclick="openSettings('msg')">Edit wording</button></div>
+      <button class="btn ghost" style="padding:4px 12px;min-height:40px;font-size:12px;margin-top:8px" onclick="openSettings('msg')">Edit wording</button></div>
     <div class="preview" style="background:rgba(245,214,123,.08);border-color:rgba(245,214,123,.22)">Demo — Send opens your Messages app with the text ready. Nothing goes out until you hit send there.</div>
     <div class="sect"><span>${list.length} ${type==="chase"?"owing":type==="remind"?"scheduled":type==="done"?"cleaned "+(txDoneDay()===TODAY()?"today":shortD(txDoneDay())):"on today"}</span><span>${able.length} textable</span></div>
     ${list.length?`<div class="list glass">${list.map(j=>`<div class="item">
@@ -2527,7 +2556,7 @@ function finishDone(id,status,amt,how,date,force){
   const el=$("c"+id);
   let d=date||UI.day||TODAY();
   if(dt(d)>dt(TODAY())) d=TODAY();     // never log work in the future from a card tap
-  if(!force&&cleanedOn(j,d)){
+  if(!force&&opt("askTwice")&&cleanedOn(j,d)){
     PENDING_DONE={id,status,amt,how,date:d};
     againSheet(j,d,"confirmDoneAgain()");
     return;
@@ -2551,7 +2580,7 @@ function finishDone(id,status,amt,how,date,force){
     toast("Cleaned"+when+" · "+msg,"Undo",undo);
   };
   buzz();
-  if(el){ el.classList.add("cleaning"); setTimeout(apply,700); } else apply();
+  if(el&&wipeOn()){ el.classList.add("cleaning"); setTimeout(apply,700); } else apply();
 }
 function skipSheet(id){
   const j=S.jobs.find(x=>x.id===id);
@@ -2580,7 +2609,8 @@ function doSkip(id,swiped){
 function rainDay(){
   const d=UI.day||TODAY(), list=orderedDay(d);
   if(!list.length){ toast("Nothing left to move"); return; }
-  UI.rain={when:"next",keep:true};
+  const last=opt("rainRemember")&&S.settings.rainLast;   // "Remember my rain day choice"
+  UI.rain=last&&["next","1","pick"].includes(last.when)?{when:last.when,keep:!!last.keep}:{when:"next",keep:true};
   sheet(`<h3>Rain day</h3><div class="sub">${pl(list.length,"job")} left ${d===TODAY()?"today":"on "+uk(d)}. Round order stays as it is.</div>
     <label>When will you do them?</label>
     <div class="seg" id="rainWhen">
@@ -2596,7 +2626,7 @@ function rainDay(){
     </div>
     <div class="preview" id="rainPrev"></div>
     <button class="btn primary" style="width:100%" id="rainGo" onclick="doRain()">Move ${pl(list.length,"job")}</button>`);
-  rainPreview();
+  rainPick("when",UI.rain.when); rainPick("keep",UI.rain.keep);
 }
 function nextWorkingDay(d){ let n=addD(d,1); while([0,6].includes(dt(n).getDay())) n=addD(n,1); return n; }
 function rainTarget(){
@@ -2623,6 +2653,7 @@ function rainPreview(){
 function doRain(){
   const d=UI.day||TODAY(), list=orderedDay(d), target=rainTarget(), keep=!!(UI.rain&&UI.rain.keep);
   if(!target){ toast("Pick a date first"); return; }
+  if(opt("rainRemember")) S.settings.rainLast={when:UI.rain.when,keep};
   const n=Math.round((dt(target)-dt(d))/864e5);
   closeSheet(); snap(); buzz();
   list.forEach(j=>{
@@ -3182,7 +3213,7 @@ function openSettings(focus){
       <div><label>Add a frequency (weeks)</label><input id="s_freq" type="number" placeholder="e.g. 12"></div></div>
     <div style="margin:-4px 0 12px">${freqSort(s.freqs).map(w=>BASE_FREQS.includes(w)?`<span class="chip">${freqLabel(w)}</span> `
       :`<span class="chip freqchip">${freqLabel(w)}<button onclick="removeFreq(${w})" aria-label="Remove ${freqLabel(w)}">✕</button></span> `).join("")}
-      <button class="btn ghost" style="padding:4px 10px;font-size:12px" onclick="addFreq()">Add</button></div>
+      <button class="btn ghost" style="padding:4px 14px;min-height:40px;font-size:12px" onclick="addFreq()">Add</button></div>
 
     <details class="settingsgroup" id="msg">
       <summary><span>Message templates</span><b>4 templates</b></summary>
@@ -3196,9 +3227,11 @@ function openSettings(focus){
     </details>
 
     ${feelHTML()}
+    ${optGroupHTML("extras","Helpers & prompts",EXTRA_ROWS)}
 
     ${nativeNotificationsHTML()}
     ${nativeWidgetsHTML()}
+    ${versionHTML()}
 
     <details class="settingsgroup" id="data">
       <summary><span>Data & backup</span><b>${pl(S.jobs.length,"job")}</b></summary>
@@ -3232,12 +3265,40 @@ function openSettings(focus){
     }
   },180);
 }
+/* App version: switch back to the previous release if an update misbehaves (Android app only) */
+function versionInfo(){ try{ return NATIVE&&GleamNative.versionInfo?JSON.parse(GleamNative.versionInfo()):null; }catch(_){ return null; } }
+function versionHTML(){
+  const v=versionInfo(); if(!v) return "";
+  const nice=s=>String(s||"").replace(/^2\.0\.0-alpha/,"alpha ");
+  return `<details class="settingsgroup" id="version">
+    <summary><span>App version</span><b>${esc(nice(v.current))}</b></summary>
+    <div class="settingbody">
+      <div class="kv"><span>This version</span><b>${esc(nice(v.current))}</b></div>
+      ${v.previous?`<div class="kv"><span>Previous version</span><b>${esc(nice(v.previous))}</b></div>
+      <div class="preview">If today's update has a problem, switch back to the previous version. Your customers, jobs and payments stay as they are, and a recovery copy is saved first. A yellow bar at the top lets you come back to the newest one.</div>
+      <button class="btn" style="width:100%" onclick="askPreviousVersion()">Switch to previous version</button>`
+      :`<div class="preview">There's no earlier version to switch back to yet.</div>`}
+    </div></details>`;
+}
+function askPreviousVersion(){
+  const v=versionInfo(); if(!v||!v.previous) return;
+  sheet(`<h3>Switch to the previous version?</h3>
+    <div class="sub">Gleam will reload as ${esc(String(v.previous).replace(/^2\.0\.0-alpha/,"alpha "))}. Nothing is deleted, and you can switch back any time from the yellow bar at the top.</div>
+    <button class="btn primary" style="width:100%" onclick="usePreviousVersion()">Switch now</button>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="closeSheet()">Cancel</button>`);
+}
+async function usePreviousVersion(){
+  try{ GleamNative.recoverySave("before version switch",JSON.stringify(S)); }catch(_){}
+  try{ await flushSave(); }catch(_){}
+  try{ GleamNative.useVersion("previous"); }catch(_){ toast("Couldn't switch version"); }
+}
 /* Gestures & feel — each switch saves straight away */
 const FEEL_ROWS=[
   ["swipeTabs","Swipe between tabs","Swipe left or right on the page to change tab"],
   ["swipeJobs","Swipe jobs to complete or skip","On Today: swipe right for Paid, left to skip"],
   ["keepScroll","Remember where I scrolled","Each tab opens where you left it"],
-  ["buzz","Little buzz on taps","A short vibration when you finish, skip or pick a job"]];
+  ["buzz","Little buzz on taps","A short vibration when you finish, skip or pick a job"],
+  ["cleanAnim","Squeegee wipe when a job's done","Plays the wipe and splash. Off finishes jobs instantly"]];
 const feelCount=()=>FEEL_KEYS.filter(feelOn).length;
 function feelHTML(){
   return `<details class="settingsgroup" id="feel">
@@ -3247,6 +3308,30 @@ function feelHTML(){
         <input id="f_${k}" type="checkbox" ${feelOn(k)?"checked":""} onchange="setFeel('${k}',this.checked)"></label>`).join("")}
     </div>
   </details>`;
+}
+/* Helpers & prompts — same switch rows as Gestures & feel, each saves straight away */
+const EXTRA_ROWS=[
+  ["askTwice","Check before cleaning a job twice in a day","Asks first if a job already has a clean logged that day"],
+  ["payChips","Cash, Bank or Card buttons on Paid","Off: Paid is logged the way they usually pay"],
+  ["lateBanner","Left-behind reminder on Today","The bar for jobs missed on earlier days. They still show in Schedule"],
+  ["holdHint","“Hold to pick several” tip","The small hint line above Today, Schedule and Customers lists"],
+  ["rainRemember","Remember my rain day choice","Rain day opens with what you picked last time"],
+  ["longUndo","More time to undo","Keeps the Undo button up for 9 seconds instead of 5"]];
+const optCount=rows=>rows.filter(r=>opt(r[0])).length;
+function optGroupHTML(id,title,rows){
+  return `<details class="settingsgroup" id="${id}">
+    <summary><span>${title}</span><b id="${id}Sum">${optCount(rows)} of ${rows.length} on</b></summary>
+    <div class="settingbody">
+      ${rows.map(([k,t,d])=>`<label class="switchrow"><span><b>${t}</b><small>${d}</small></span>
+        <input id="f_${k}" type="checkbox" ${opt(k)?"checked":""} onchange="setOpt('${k}',this.checked)"></label>`).join("")}
+    </div>
+  </details>`;
+}
+function setOpt(k,on){
+  S.settings[k]=!!on; save();
+  const b=$("extrasSum"); if(b) b.textContent=optCount(EXTRA_ROWS)+" of "+EXTRA_ROWS.length+" on";
+  if(k==="rainRemember"&&!on) delete S.settings.rainLast;
+  if(["lateBanner","holdHint"].includes(k)) render();
 }
 function setFeel(k,on){
   S.settings[k]=!!on; save();
@@ -3584,7 +3669,8 @@ function toast(msg,action,fn,ms){
   const b=$("toastAct"); b.textContent=action||""; b.style.display=action?"block":"none";
   b.onclick=()=>{ if(fn) fn(); $("toast").classList.remove("on"); };
   $("toast").classList.add("on"); clearTimeout(toastT);
-  toastT=setTimeout(()=>$("toast").classList.remove("on"),ms||3600);
+  // Undo needs time to reach: 5s, or 9s with "More time to undo"
+  toastT=setTimeout(()=>$("toast").classList.remove("on"),ms||(action?(opt("longUndo")?9000:5000):3600));
 }
 function go(p){ UI.goTop=true; document.querySelector('.tab[data-p="'+p+'"]').click(); }
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
@@ -3731,7 +3817,7 @@ function normaliseState(v){
   v.meta.schemaVersion=2;
   if(v.settings.compactToday===undefined) v.settings.compactToday=false;
   if(v.settings.compactCustomers===undefined) v.settings.compactCustomers=false;
-  FEEL_KEYS.forEach(k=>{ if(typeof v.settings[k]!=="boolean") v.settings[k]=DEFAULTS.settings[k]; });
+  FEEL_KEYS.concat(EXTRA_KEYS).forEach(k=>{ if(typeof v.settings[k]!=="boolean") v.settings[k]=DEFAULTS.settings[k]; });
   v.settings.freqs=freqSort(v.settings.freqs||[4,5,8,0]);
   v.settings.tpl=v.settings.tpl||{};
   Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!v.settings.tpl[k]) v.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
