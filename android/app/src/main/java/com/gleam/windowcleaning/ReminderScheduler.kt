@@ -1,14 +1,13 @@
 package com.gleam.windowcleaning
 
 import android.content.Context
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import org.json.JSONObject
 import java.time.Duration
 import java.time.ZonedDateTime
-import java.util.concurrent.TimeUnit
 
 data class NotificationSettings(
     val todayEnabled: Boolean = true,
@@ -99,6 +98,9 @@ object ReminderScheduler {
         reschedule(context)
     }
 
+    /** Re-anchors reminders to the wall clock. Called on settings change and on app start. */
+    fun refresh(context: Context) = reschedule(context)
+
     private fun reschedule(context: Context) {
         val wm = WorkManager.getInstance(context)
         wm.cancelUniqueWork(MORNING)
@@ -106,33 +108,35 @@ object ReminderScheduler {
         if (!enabled(context)) return
 
         val s = settings(context)
-        if (s.todayEnabled || s.leftBehindEnabled) {
-            schedule(context, MORNING, s.todayHour, s.todayMinute, "morning")
-        }
-        if (s.tomorrowEnabled) {
-            schedule(context, EVENING, s.tomorrowHour, s.tomorrowMinute, "evening")
-        }
+        if (s.todayEnabled || s.leftBehindEnabled) scheduleNext(context, "morning")
+        if (s.tomorrowEnabled) scheduleNext(context, "evening")
     }
 
-    private fun schedule(
-        context: Context,
-        name: String,
-        hour: Int,
-        minute: Int,
-        kind: String
-    ) {
+    /**
+     * One-shot work for the next occurrence of the chosen local time. BriefWorker calls this
+     * again after each run, so the time stays right across clock changes (a 24h periodic
+     * request drifts by an hour at every BST change).
+     */
+    fun scheduleNext(context: Context, kind: String) {
+        if (!enabled(context)) return
+        val s = settings(context)
+        val (name, hour, minute) = if (kind == "evening") {
+            Triple(EVENING, s.tomorrowHour, s.tomorrowMinute)
+        } else {
+            Triple(MORNING, s.todayHour, s.todayMinute)
+        }
         val now = ZonedDateTime.now()
         var next = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
         if (!next.isAfter(now)) next = next.plusDays(1)
 
-        val request = PeriodicWorkRequestBuilder<BriefWorker>(24, TimeUnit.HOURS)
+        val request = OneTimeWorkRequestBuilder<BriefWorker>()
             .setInitialDelay(Duration.between(now, next))
             .setInputData(workDataOf("kind" to kind))
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        WorkManager.getInstance(context).enqueueUniqueWork(
             name,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
             request
         )
     }

@@ -45,6 +45,14 @@ class GleamNativeBridge(
     }
 
     @JavascriptInterface
+    fun setBackActive(active: Boolean) {
+        activity.setBackActive(active)
+    }
+
+    @JavascriptInterface
+    fun notificationsAllowed(): Boolean = activity.notificationsAllowed()
+
+    @JavascriptInterface
     fun haptic() {
         activity.performGleamHaptic()
     }

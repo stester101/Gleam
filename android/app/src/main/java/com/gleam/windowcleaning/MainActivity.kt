@@ -16,6 +16,11 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import org.json.JSONObject
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -38,14 +43,37 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { }
+    ) { granted ->
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript(
+                "window.onNotificationPermission&&onNotificationPermission($granted)", null
+            )
+        }
+    }
+
+    /** Only enabled while the page has something to close, so predictive back works otherwise. */
+    private val backCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            webView.evaluateJavascript("window.nativeBack&&nativeBack()", null)
+        }
+    }
+
+    fun setBackActive(active: Boolean) {
+        runOnUiThread { backCallback.isEnabled = active }
+    }
+
+    fun notificationsAllowed(): Boolean =
+        NotificationManagerCompat.from(this).areNotificationsEnabled()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
 
-        window.statusBarColor = Color.rgb(11, 43, 51)
-        window.navigationBarColor = Color.rgb(6, 26, 32)
         BriefWorker.ensureChannel(this)
+        ReminderScheduler.refresh(this)
 
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler(
@@ -64,7 +92,6 @@ class MainActivity : ComponentActivity() {
             settings.setSupportZoom(false)
             settings.builtInZoomControls = false
             settings.displayZoomControls = false
-            settings.textZoom = 100
 
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(
@@ -133,27 +160,22 @@ class MainActivity : ComponentActivity() {
 
         setContentView(webView)
 
+        // Edge-to-edge: the page handles system bars via env(safe-area-inset-*);
+        // only the keyboard needs native help, by shrinking the WebView above it.
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.setPadding(0, 0, 0, (ime - nav).coerceAtLeast(0))
+            insets
+        }
+
         if (savedInstanceState == null) {
             webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
         } else {
             webView.restoreState(savedInstanceState)
         }
 
-        onBackPressedDispatcher.addCallback(
-            this,
-            object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    webView.evaluateJavascript(
-                        "(function(){var s=document.getElementById('sheet');" +
-                            "if(s&&s.classList.contains('on')){closeSheet();return 'sheet';}" +
-                            "return 'none';})()"
-                    ) { result ->
-                        if (result == "\"sheet\"") return@evaluateJavascript
-                        if (webView.canGoBack()) webView.goBack() else finish()
-                    }
-                }
-            }
-        )
+        onBackPressedDispatcher.addCallback(this, backCallback)
     }
 
     private fun deliverPendingNativeState() {
@@ -183,7 +205,7 @@ class MainActivity : ComponentActivity() {
         super.onPause()
     }
 
-    fun requestNotificationPermissionIfNeeded() {
+    fun requestNotificationPermissionIfNeeded() = runOnUiThread {
         if (
             Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(

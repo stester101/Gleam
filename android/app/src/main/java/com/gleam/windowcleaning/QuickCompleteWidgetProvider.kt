@@ -41,6 +41,9 @@ class QuickCompleteWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.quick_actions, View.GONE)
             } else {
                 views.setViewVisibility(R.id.quick_actions, View.VISIBLE)
+                val armed = QuickArm.armedFor(context, job.id)
+                views.setTextViewText(R.id.quick_paid, if (armed == true) "CONFIRM ✓" else "PAID")
+                views.setTextViewText(R.id.quick_unpaid, if (armed == false) "CONFIRM ✓" else "NOT PAID")
                 views.setOnClickPendingIntent(
                     R.id.quick_paid,
                     actionIntent(context, widgetId, job.id, true)

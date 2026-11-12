@@ -20,6 +20,16 @@ class BriefWorker(
 ) : Worker(appContext, workerParams) {
 
     override fun doWork(): Result {
+        val kind = inputData.getString("kind") ?: "morning"
+        return try {
+            brief(kind)
+        } finally {
+            // queue tomorrow's run at the same wall-clock time
+            ReminderScheduler.scheduleNext(applicationContext, kind)
+        }
+    }
+
+    private fun brief(kind: String): Result {
         if (!ReminderScheduler.enabled(applicationContext)) return Result.success()
         if (
             Build.VERSION.SDK_INT >= 33 &&
@@ -32,7 +42,6 @@ class BriefWorker(
         SnapshotStore.refresh(applicationContext)
         val snapshot = SnapshotStore.read(applicationContext)
         val settings = ReminderScheduler.settings(applicationContext)
-        val kind = inputData.getString("kind") ?: "morning"
 
         val content = when (kind) {
             "evening" -> {
