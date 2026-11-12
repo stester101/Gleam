@@ -170,8 +170,17 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         if (::webView.isInitialized) {
+            webView.evaluateJavascript("window.onNativeResume&&onNativeResume()", null)
             webView.postDelayed({ deliverPendingNativeState() }, 250)
         }
+    }
+
+    override fun onPause() {
+        // write any debounced save before Android can kill the process
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript("window.flushSave&&flushSave()", null)
+        }
+        super.onPause()
     }
 
     fun requestNotificationPermissionIfNeeded() {

@@ -41,7 +41,8 @@ object SnapshotStore {
                 val next: String,
                 val roundId: String,
                 val seq: Int,
-                val active: Boolean
+                val active: Boolean,
+                val last: String
             )
 
             val parsed = mutableListOf<Job>()
@@ -54,7 +55,8 @@ object SnapshotStore {
                     next = j.optString("next"),
                     roundId = j.optString("roundId"),
                     seq = j.optInt("seq", 999),
-                    active = j.optString("status", "active") == "active"
+                    active = j.optString("status", "active") == "active",
+                    last = j.optString("last")
                 )
             }
 
@@ -69,7 +71,7 @@ object SnapshotStore {
                     for (i in 0 until arr.length()) explicit[arr.optString(i)] = i
                 }
                 return parsed
-                    .filter { it.active && it.next == date }
+                    .filter { it.active && it.next == date && !(date == today && it.last == today) }
                     .sortedWith(
                         compareBy<Job> { explicit[it.id] ?: Int.MAX_VALUE }
                             .thenBy { it.roundId }

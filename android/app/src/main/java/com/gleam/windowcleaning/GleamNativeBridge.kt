@@ -2,13 +2,9 @@ package com.gleam.windowcleaning
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
-import android.content.ContentValues
 import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import android.webkit.JavascriptInterface
 import android.widget.Toast
-import java.io.File
 
 class GleamNativeBridge(
     private val activity: MainActivity
@@ -19,7 +15,19 @@ class GleamNativeBridge(
         if (accepted) {
             SnapshotStore.updateFromState(activity, json)
             refreshWidgets()
+            RecoveryStore.onSync(activity, json)
         }
+    }
+
+    @JavascriptInterface
+    fun recoveryList(): String = RecoveryStore.list(activity)
+
+    @JavascriptInterface
+    fun recoveryRead(name: String): String = RecoveryStore.read(activity, name)
+
+    @JavascriptInterface
+    fun recoverySave(label: String, json: String) {
+        RecoveryStore.saveBefore(activity, label, json)
     }
 
     @JavascriptInterface
@@ -92,49 +100,16 @@ class GleamNativeBridge(
     }
 
     @JavascriptInterface
-    fun saveFile(name: String, mimeType: String, text: String) {
-        runCatching {
-            if (Build.VERSION.SDK_INT >= 29) {
-                val values = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, name)
-                    put(MediaStore.Downloads.MIME_TYPE, mimeType)
-                    put(
-                        MediaStore.Downloads.RELATIVE_PATH,
-                        Environment.DIRECTORY_DOWNLOADS + "/Gleam"
-                    )
-                }
-                val uri = activity.contentResolver.insert(
-                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                    values
-                ) ?: error("Could not create download")
-                activity.contentResolver.openOutputStream(uri)?.use {
-                    it.write(text.toByteArray(Charsets.UTF_8))
-                } ?: error("Could not write download")
-            } else {
-                val dir = File(
-                    activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                    "Gleam"
-                )
-                dir.mkdirs()
-                File(dir, name).writeText(text)
-            }
-
-            activity.runOnUiThread {
-                Toast.makeText(
-                    activity,
-                    "Saved to Downloads/Gleam",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }.onFailure {
-            activity.runOnUiThread {
-                Toast.makeText(
-                    activity,
-                    "Could not save the file",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+    fun saveFile(name: String, mimeType: String, text: String): Boolean {
+        val ok = Downloads.write(activity, name, mimeType, text)
+        activity.runOnUiThread {
+            Toast.makeText(
+                activity,
+                if (ok) "Saved to Downloads/Gleam" else "Could not save the file",
+                Toast.LENGTH_SHORT
+            ).show()
         }
+        return ok
     }
 
     @JavascriptInterface

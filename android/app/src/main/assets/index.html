@@ -754,6 +754,7 @@ async function receiveNativeState(raw){
     if(data&&Array.isArray(data.ops)){
       let applied=0;
       data.ops.forEach(op=>{ if(applyNativeOp(op)) applied++; });
+      if(applied) UNDO=null;   // an older undo snapshot would wipe the widget cleans
       if(await Store.set(S)===false){ toast("Couldn't save home-screen update — will retry"); return; }
       try{ GleamNative.acknowledgeNativeOps(JSON.stringify(data.ops.map(o=>o&&o.id))); }catch(_){}
       render(); nativeSync();
@@ -819,7 +820,7 @@ async function sendRequests(){
   finally{ requestsSending=false; save(); }
 }
 window.addEventListener("online",()=>sendRequests());
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden) sendRequests(); });
+
 /* ============================================================
    SEED DATA — from the Aworka export (Ben's rounds folded in)
    [jobId, name, address, round, price, weeks, nextDue, owed, phone, balanceDate, priceSince]
@@ -835,7 +836,8 @@ function ymd(n){ if(!n) return ""; const s=String(n).padStart(6,"0"); return "20
 const dt=s=>new Date(s+"T00:00:00");
 function iso(d){ const z=new Date(d); z.setMinutes(z.getMinutes()-z.getTimezoneOffset()); return z.toISOString().slice(0,10); }
 const TODAY=()=>iso(new Date());
-const addD=(s,n)=>iso(new Date(dt(s).getTime()+n*D));
+// calendar-day arithmetic in UTC: adding n*24h to local midnight drifts a day across a clock change
+const addD=(s,n)=>{ const p=s.split("-").map(Number); return new Date(Date.UTC(p[0],p[1]-1,p[2]+n)).toISOString().slice(0,10); };
 const daysBetween=(a,b)=>Math.round((dt(b)-dt(a))/D);
 const uk=s=>s?s.slice(8,10)+"/"+s.slice(5,7)+"/"+s.slice(0,4):"—";
 const shortD=s=>s?dt(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}):"—";
@@ -848,34 +850,43 @@ const overdue=j=>j.weeks>0 && j.next && dt(j.next)<dt(TODAY());
 /* ================= STORAGE ================= */
 const Store={
   mode:"memory", db:null,
+  /* IndexedDB is the only real store. If it exists but won't open, mode becomes "failed"
+     and boot stops — never fall back to an empty store and seed over real data. */
   async init(){
-    try{
-      this.db=await new Promise((res,rej)=>{
+    if(window.indexedDB){
+      // one open request, given plenty of time on a slow cold start
+      const opening=new Promise((res,rej)=>{
         const r=indexedDB.open("gleam",1);
         r.onupgradeneeded=()=>r.result.createObjectStore("kv");
         r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
-        setTimeout(()=>rej(new Error("timeout")),1500);
       });
-      this.mode="IndexedDB"; return;
-    }catch(e){}
+      try{
+        this.db=await Promise.race([opening,new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),15000))]);
+        this.mode="IndexedDB";
+      }catch(e){ this.mode="failed"; }
+      return;
+    }
     try{ localStorage.setItem("_g","1"); localStorage.removeItem("_g"); this.mode="localStorage"; return; }catch(e){}
     this.mode="memory";
   },
+  // throws on a read error, so boot can tell "no data yet" from "couldn't read"
   async get(){
-    try{
-      if(this.mode==="IndexedDB") return await new Promise((res,rej)=>{
-        const q=this.db.transaction("kv","readonly").objectStore("kv").get("state");
-        q.onsuccess=()=>res(q.result||null); q.onerror=()=>rej(q.error);
-      });
-      if(this.mode==="localStorage"){ const v=localStorage.getItem("gleam"); return v?JSON.parse(v):null; }
-    }catch(e){}
+    if(this.mode==="IndexedDB") return await new Promise((res,rej)=>{
+      const q=this.db.transaction("kv","readonly").objectStore("kv").get("state");
+      q.onsuccess=()=>res(q.result||null); q.onerror=()=>rej(q.error);
+    });
+    if(this.mode==="localStorage"){ const v=localStorage.getItem("gleam"); return v?JSON.parse(v):null; }
+    if(this.mode==="failed") throw new Error("storage failed");
     return null;
   },
   async set(v){
+    if(this.mode==="failed") return false;
     try{
       if(this.mode==="IndexedDB") return await new Promise((res,rej)=>{
-        const q=this.db.transaction("kv","readwrite").objectStore("kv").put(v,"state");
-        q.onsuccess=()=>res(); q.onerror=()=>rej(q.error);
+        // resolve only once the transaction has committed durably
+        const tx=this.db.transaction("kv","readwrite",{durability:"strict"});
+        tx.objectStore("kv").put(v,"state");
+        tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error);
       });
       if(this.mode==="localStorage") localStorage.setItem("gleam",JSON.stringify(v));
     }catch(e){ return false; }
@@ -991,7 +1002,8 @@ const currentPrice=j=>+j.price||0;
    and always read/clear the keep-rhythm anchor. `onDate` lets a job be completed
    on a past day (day navigation, or a back-dated completion from Customers). */
 function advanceNext(j,onDate){
-  if(j.weeks<=0) return;
+  // on-request jobs: once done (or skipped) they're no longer due on any date
+  if(!(j.weeks>0)){ j.next=""; j.anchor=null; return; }
   const d=onDate||TODAY();
   if(j.anchor){
     let n=addD(j.anchor,j.weeks*7);
@@ -1018,17 +1030,29 @@ function resequence(jobs){
   const by={};
   jobs.forEach(j=>{ by[j.roundId]=by[j.roundId]||0; j.seq=++by[j.roundId]; });
 }
+let saveFailed=false;
+async function writeNow(){
+  saveTimer=null;
+  const ok=(await Store.set(S))!==false;
+  if(ok) S.meta.lastSaved=new Date().toISOString();
+  if(!ok&&!saveFailed) toast("Couldn't save — close Gleam fully and reopen");
+  saveFailed=!ok;
+  nativeSync();
+  savedLine(ok);
+  return ok;
+}
 function save(){
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(async()=>{
-    S.meta.lastSaved=new Date().toISOString();
-    const ok=await Store.set(S);
-    nativeSync();
-    savedLine(ok);
-  },350);
+  saveTimer=setTimeout(writeNow,350);
 }
+/* write any pending save immediately — called when Gleam is backgrounded */
+function flushSave(){ if(saveTimer){ clearTimeout(saveTimer); return writeNow(); } }
+window.flushSave=flushSave;
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushSave(); });
+window.addEventListener("pagehide",()=>flushSave());
 function savedLine(ok){
   const el=$("savedLine"); if(!el) return;
+  if(ok===false||saveFailed){ el.innerHTML="<b style='color:var(--suds)'>Couldn't save — close Gleam fully and reopen</b>"; return; }
   if(Store.mode==="memory"){ el.innerHTML="Preview — <b style='color:var(--suds)'>download the file to keep your data</b>"; return; }
   const t=S.meta.lastSaved?new Date(S.meta.lastSaved).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"";
   el.innerHTML=t?"<b>Saved "+t+"</b> · everything's on this phone":"<b>Saved on this phone</b>";
@@ -2244,10 +2268,13 @@ function finishDone(id,status,amt,how,date){
   const el=$("c"+id);
   let d=date||UI.day||TODAY();
   if(dt(d)>dt(TODAY())) d=TODAY();     // never log work in the future from a card tap
+  // record and save straight away; the animation only delays the redraw,
+  // so closing Gleam mid-animation can't lose the clean
+  snap();
+  const r=completeJob(j,{status,amt,how,date:d});
+  save();
   const apply=()=>{
-    snap();
-    const r=completeJob(j,{status,amt,how,date:d});
-    save(); render();
+    render();
     const owed=Math.round((r.charged-r.paid)*100)/100;
     const when=d===TODAY()?"":" on "+uk(d);
     const msg = !r.charged ? "logged"
@@ -2859,6 +2886,7 @@ function openSettings(focus){
           <button class="btn" onclick="$('impCSV').click()">Import CSV</button>
           <button class="btn" onclick="$('impJSON').click()">Restore JSON</button>
         </div>
+        ${NATIVE?`<div class="acts" style="margin-top:8px"><button class="btn" onclick="recoverySheet()">Automatic copies</button></div>`:""}
         <input type="file" id="impCSV" accept=".csv,text/csv" style="display:none" onchange="importCSV(this)">
         <input type="file" id="impJSON" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
         <div class="preview" style="margin-top:12px">CSV import matches on Aworka Job ID and merges — it never creates a duplicate or wipes your history.</div>
@@ -2901,7 +2929,7 @@ function resetAll(){
     <div class="acts"><button class="btn danger" onclick="doReset()">Yes, reset</button>
       <button class="btn ghost" onclick="closeSheet()">Cancel</button></div>`);
 }
-async function doReset(){ S=seed(); await Store.set(S); UI.day=TODAY(); SEL={ctx:null,ids:[]}; closeSheet(); render(); toast("Reset to the backup snapshot"); }
+async function doReset(){ if(NATIVE){ try{ GleamNative.recoverySave("reset",JSON.stringify(S)); }catch(_){} } S=seed(); await Store.set(S); UI.day=TODAY(); SEL={ctx:null,ids:[]}; closeSheet(); render(); toast("Reset to the backup snapshot"); }
 
 /* ---- CSV ---- */
 function parseCSV(text){
@@ -3007,37 +3035,76 @@ function exportCSV(){
       "Price Since":j.ps,"Aworka Job ID":j.jid||""};
     lines.push(cols.map(c=>q(m[c]!==undefined?m[c]:"")).join(","));
   });
-  download(lines.join("\n"),"gleam-export-"+TODAY()+".csv","text/csv");
-  markExported();
+  if(download(lines.join("\n"),"gleam-export-"+TODAY()+".csv","text/csv")) markExported();
 }
 function exportJSON(){
-  download(JSON.stringify(S,null,1),"gleam-backup-"+TODAY()+".json","application/json");
-  markExported();
+  if(download(JSON.stringify(S,null,1),"gleam-backup-"+TODAY()+".json","application/json")) markExported();
 }
 function markExported(){ S.meta.lastExport=new Date().toISOString(); save(); render(); toast("Backed up"); }
+/* Restores go through a candidate copy: validate, migrate, normalise and trial-render it,
+   and only then replace S. The current data is kept as a recovery copy first. */
+function backupProblem(v){
+  if(!v||typeof v!=="object"||!Array.isArray(v.jobs)) return "That file isn't a Gleam backup";
+  if(!v.jobs.length) return "That backup has no customers in it — nothing changed";
+  for(const j of v.jobs){
+    if(!j||typeof j!=="object"||j.id==null||(j.hist!=null&&!Array.isArray(j.hist))) return "That backup looks damaged — nothing changed";
+  }
+  return "";
+}
+function restoreState(v,label){
+  const problem=backupProblem(v);
+  if(problem){ toast(problem); return false; }
+  let next;
+  try{ next=normaliseState(migrateState(JSON.parse(JSON.stringify(v)))); }
+  catch(e){ toast("That file isn't a Gleam backup"); return false; }
+  const prev=S;
+  try{ S=next; recalcAll(); render(); }
+  catch(e){ S=prev; render(); toast("That backup couldn't be opened — nothing changed"); return false; }
+  if(NATIVE&&prev){ try{ GleamNative.recoverySave("restore",JSON.stringify(prev)); }catch(_){} }
+  UNDO=null; SEL={ctx:null,ids:[]};
+  save(); closeSheet(); render();
+  document.body.classList.toggle("outdoor",!!S.settings.outdoor);
+  toast("Restored "+S.jobs.length+" jobs"+(label?" from "+label:""));
+  return true;
+}
 function importJSON(input){
   const file=input.files[0]; if(!file) return;
   const r=new FileReader();
   r.onload=()=>{
-    try{
-      const v=JSON.parse(r.result);
-      if(!v.jobs||!Array.isArray(v.jobs)) throw new Error("bad");
-      snap();
-      S=migrateState(v);
-      save(); closeSheet(); render();
-      document.body.classList.toggle("outdoor",!!S.settings.outdoor);
-      toast("Restored "+S.jobs.length+" jobs");
-    }catch(e){ toast("That file isn't a Gleam backup"); }
+    let v=null;
+    try{ v=JSON.parse(r.result); }catch(e){}
+    restoreState(v,"");
     input.value="";
   };
   r.readAsText(file);
 }
+/* automatic recovery copies kept by the Android app */
+function recoveryCopies(){
+  if(!NATIVE) return [];
+  try{ return JSON.parse(GleamNative.recoveryList())||[]; }catch(_){ return []; }
+}
+function recoveryLabel(c){
+  const d=new Date(c.modified), day=iso(d);
+  const kind=c.name.startsWith("before-")?"Before a restore":"Daily copy";
+  return `${kind} · ${uk(day)} ${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})} · ${c.jobs} jobs`;
+}
+function recoverySheet(){
+  const list=recoveryCopies();
+  sheet(`<h3>Automatic copies</h3><div class="sub">Gleam keeps a copy of each of the last 7 days. Restoring keeps today's data as another copy.</div>
+    ${list.length?list.map(c=>`<button class="btn" style="width:100%;margin-top:8px;text-align:left" onclick="restoreCopy('${esc(c.name)}')">${esc(recoveryLabel(c))}</button>`).join(""):`<div class="preview">No automatic copies yet.</div>`}`);
+}
+function restoreCopy(name){
+  let v=null;
+  try{ v=JSON.parse(GleamNative.recoveryRead(name)); }catch(_){}
+  restoreState(v,"automatic copy");
+}
 function download(text,name,type){
-  if(NATIVE){ try{ GleamNative.saveFile(name,type,text); return; }catch(_){} }
+  if(NATIVE){ try{ return GleamNative.saveFile(name,type,text)!==false; }catch(_){ return false; } }
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([text],{type}));
   a.download=name; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  return true;
 }
 
 /* ================= CHROME ================= */
@@ -3123,30 +3190,61 @@ try{
 }catch(e){}
 
 /* boot */
+/* fill in anything an older or partial save is missing */
+function normaliseState(v){
+  if(!v.settings) v.settings=JSON.parse(JSON.stringify(DEFAULTS.settings));
+  if(!v.meta) v.meta={...DEFAULTS.meta};
+  v.meta.schemaVersion=2;
+  if(v.settings.compactToday===undefined) v.settings.compactToday=false;
+  if(v.settings.compactCustomers===undefined) v.settings.compactCustomers=false;
+  v.settings.freqs=v.settings.freqs||[4,5,8,0];
+  v.settings.tpl=v.settings.tpl||{};
+  Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!v.settings.tpl[k]) v.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
+  if(!v.rounds) v.rounds=[];
+  if(!v.dayOrders) v.dayOrders={};
+  if(!v.requests) v.requests=[];
+  v.jobs.forEach(j=>{ if(!Array.isArray(j.hist)) j.hist=[]; if(j.addr==null) j.addr=""; });
+  return v;
+}
+function storageFailedScreen(){
+  document.body.innerHTML=`<div style="padding:calc(env(safe-area-inset-top) + 40px) 24px 24px;color:#e8f4f6;font:16px/1.5 system-ui,sans-serif;background:#061a20;min-height:100vh">
+    <h2 style="margin:0 0 10px">Gleam couldn't open its data</h2>
+    <p style="opacity:.8">Nothing has been changed or lost. Close Gleam fully (swipe it away) and open it again.</p>
+    <button onclick="location.reload()" style="margin-top:16px;padding:14px 20px;border-radius:14px;border:0;background:#69d6df;color:#061a20;font-weight:700;font-size:16px">Try again</button></div>`;
+}
+let DAY_SEEN="";
+/* Android calls this on resume: roll the day over if Gleam was left open overnight */
+function onNativeResume(){
+  if(!S) return;
+  const t=TODAY();
+  if(DAY_SEEN&&t!==DAY_SEEN){
+    if(UI.day===DAY_SEEN) UI.day=t;
+    if(UI.calSel===DAY_SEEN) UI.calSel=t;
+    DAY_SEEN=t; render();
+  }
+  sendRequests();
+}
+window.onNativeResume=onNativeResume;
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) onNativeResume(); });
 (async function boot(){
   await Store.init();
-  const stored=await Store.get();
-  S=stored&&stored.jobs&&stored.jobs.length?migrateState(stored):seed();
-  if(!S.settings) S.settings=JSON.parse(JSON.stringify(DEFAULTS.settings));
-  if(!S.meta) S.meta={...DEFAULTS.meta};
-  S.meta.schemaVersion=2;
-  if(S.settings.compactToday===undefined) S.settings.compactToday=false;
-  if(S.settings.compactCustomers===undefined) S.settings.compactCustomers=false;
-  S.settings.freqs=S.settings.freqs||[4,5,8,0];
-  Object.keys(DEFAULTS.settings.tpl).forEach(k=>{ if(!S.settings.tpl[k]) S.settings.tpl[k]=DEFAULTS.settings.tpl[k]; });
-  if(!S.rounds) S.rounds=[];
-  if(!S.dayOrders) S.dayOrders={};
-  if(!S.requests) S.requests=[];
-  UI.day=TODAY(); UI.calSel=TODAY();
+  let stored;
+  try{ stored=await Store.get(); }catch(e){ storageFailedScreen(); return; }
+  let freshInstall=!(stored&&stored.jobs&&stored.jobs.length);
+  S=normaliseState(freshInstall?seed():migrateState(stored));
+  UI.day=TODAY(); UI.calSel=TODAY(); DAY_SEEN=TODAY();
   recalcAll();
   document.body.classList.toggle("outdoor",!!S.settings.outdoor);
   $("sunBtn").textContent=S.settings.outdoor?"🌙":"☀";
   $("bizname").textContent=S.settings.owner;
+  const copies=freshInstall?recoveryCopies():[];
   render();
-  nativeSync();
+  if(!copies.length) nativeSync();   // don't push seed data over the widget mirror
   setupSheetSwipe();
   setupAutoHideNav();
-  if(!stored) save();
+  // empty store but automatic copies exist: the data was lost, so offer them instead of seeding
+  if(copies.length) recoverySheet();
+  else if(freshInstall) save();
   nativeBootDone();
   if(NATIVE){ try{ receiveNativeState(GleamNative.pendingNativeState()); }catch(_){} }
   sendRequests();

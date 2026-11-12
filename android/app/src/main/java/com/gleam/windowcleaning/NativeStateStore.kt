@@ -133,6 +133,10 @@ object NativeStateStore {
                     basis.plusWeeks(weeks.toLong())
                 }
                 j.put("next", next.format(DateTimeFormatter.ISO_LOCAL_DATE))
+            } else {
+                // on-request job: no longer due once done (matches web advanceNext)
+                j.put("next", "")
+                j.remove("anchor")
             }
 
             val hist = j.optJSONArray("hist") ?: org.json.JSONArray().also { j.put("hist", it) }
