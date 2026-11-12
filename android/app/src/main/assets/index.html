@@ -790,7 +790,7 @@ window.receiveNativeState=receiveNativeState;
    Saved in S.requests, so they're in every backup, then posted to a Google Form whose
    response sheet is the review queue. Offline they stay queued and retry later.
    Fill REQUEST_FORM from the Form's pre-filled link; empty = queue locally only. */
-const REQUEST_FORM={action:"",text:"",context:""};
+const REQUEST_FORM={action:"https://docs.google.com/forms/d/e/1FAIpQLSeyBEq2P2jx8qlAolhhiyvRIa4boLfrQzRoXel1q9nJFaiPZg/formResponse",text:"entry.408271134",context:"entry.542589521"};
 function openRequests(){
   const list=(S.requests||[]).slice(-5).reverse();
   sheet(`<h3>Ask for a change</h3><div class="sub">What would you like changed in Gleam?</div>
