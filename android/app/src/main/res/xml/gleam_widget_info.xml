@@ -6,5 +6,7 @@
     android:minHeight="110dp"
     android:previewLayout="@layout/widget_gleam"
     android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />

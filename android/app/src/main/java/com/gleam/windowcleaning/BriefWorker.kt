@@ -29,6 +29,7 @@ class BriefWorker(
             ) != PackageManager.PERMISSION_GRANTED
         ) return Result.success()
 
+        SnapshotStore.refresh(applicationContext)
         val snapshot = SnapshotStore.read(applicationContext)
         val settings = ReminderScheduler.settings(applicationContext)
         val kind = inputData.getString("kind") ?: "morning"

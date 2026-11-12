@@ -13,6 +13,7 @@ import java.util.Locale
 
 class NextJobWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        SnapshotStore.refresh(context)
         ids.forEach { updateWidget(context, manager, it) }
     }
 

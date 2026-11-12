@@ -105,6 +105,13 @@ object SnapshotStore {
         }
     }
 
+    /** Recomputes today/tomorrow from the stored state, so a new day is reflected
+     *  even when Gleam has not been opened since yesterday. */
+    fun refresh(context: Context) {
+        val state = NativeStateStore.state(context)
+        if (state.isNotBlank()) updateFromState(context, state)
+    }
+
     fun read(context: Context): GleamSnapshot {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val jobs = (1..3).mapNotNull { i ->

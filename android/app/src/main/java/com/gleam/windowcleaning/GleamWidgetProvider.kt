@@ -15,6 +15,7 @@ class GleamWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        SnapshotStore.refresh(context)
         appWidgetIds.forEach { updateWidget(context, appWidgetManager, it) }
     }
 
