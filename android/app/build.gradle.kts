@@ -10,8 +10,8 @@ android {
         applicationId = "com.gleam.windowcleaning"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20004
-        versionName = "2.0.0-alpha4"
+        versionCode = 20005
+        versionName = "2.0.0-alpha5"
     }
 
     buildFeatures {
