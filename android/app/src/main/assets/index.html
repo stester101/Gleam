@@ -1037,7 +1037,7 @@ const DEFAULTS={
     biz:"Gleam Window Cleaning", owner:"Ant Hardman",
     payDetails:"Bank: 09-01-29 / 12345678 (A Hardman). Cash or card also fine.",
     mins:30, freqs:[4,5,8,0], outdoor:false, compactToday:false, compactCustomers:false,
-    swipeTabs:true, swipeJobs:true, keepScroll:true, buzz:true,
+    swipeTabs:true, swipeDays:true, swipeFollow:true, swipeJobs:true, keepScroll:true, buzz:true,
     cleanAnim:true,
     askTwice:true, lateBanner:true, holdHint:true, payChips:true, rainRemember:false, longUndo:false,
     tpl:{
@@ -1049,7 +1049,7 @@ const DEFAULTS={
   },
   meta:{lastExport:null,lastSaved:null,nudged:false,schemaVersion:2}
 };
-const FEEL_KEYS=["swipeTabs","swipeJobs","keepScroll","buzz","cleanAnim"];
+const FEEL_KEYS=["swipeTabs","swipeDays","swipeFollow","swipeJobs","keepScroll","buzz","cleanAnim"];
 /* optional extras: on/off switches in Settings → Helpers & prompts */
 const EXTRA_KEYS=["askTwice","lateBanner","holdHint","payChips","rainRemember","longUndo"];
 /* a switch's current value, falling back to its default for older saves */
@@ -1701,7 +1701,7 @@ function pgToday(){
       : (spot?jobCard(spot,true,0,list.length):"")+shown.map((j,i)=>jobCard(j,false,i+1,list.length)).join("")}
     ${hidden>0?`<button class="btn" style="width:100%;margin:2px 0 10px" onclick="UI.todayAll=true;pgToday()">Show ${hidden} more</button>`:""}
     ${UI.todayAll&&list.length>25?`<button class="btn ghost" style="width:100%;margin:2px 0 10px" onclick="UI.todayAll=false;pgToday();$('main').scrollTop=0">Collapse</button>`:""}
-    ${!list.length?`<div class="empty"><div>${doneEntries.length?"✨":"🗓"}</div><b>${doneEntries.length?"Day's done":"Nothing on this day"}</b>${doneEntries.length?"Everything booked in has been cleaned.":"Search above to put a job on "+(isT?"today":uk(d))+", or swipe the arrows to another day."}</div>`:""}
+    ${!list.length?`<div class="empty"><div>${doneEntries.length?"✨":"🗓"}</div><b>${doneEntries.length?"Day's done":"Nothing on this day"}</b>${doneEntries.length?"Everything booked in has been cleaned.":"Search above to put a job on "+(isT?"today":uk(d))+", or swipe to another day."}</div>`:""}
     ${doneEntries.length?`<div class="sect"><span>Cleaned ${isT?"today":"this day"}</span><span>${fmt(earned)}</span></div>
       <div class="list glass">${doneEntries.map(x=>`<div class="item doneitem" onclick="jobSheet('${x.j.id}')">
         <div class="grow"><b>${esc(x.j.addr)}</b><span>${esc(roundName(x.j))} · ${x.paid>=x.amt&&x.amt?"paid":x.paid?"part paid "+fmt(x.paid):"not paid"} · next ${uk(x.j.next)}</span></div>
@@ -3310,6 +3310,8 @@ async function usePreviousVersion(){
 /* Gestures & feel — each switch saves straight away */
 const FEEL_ROWS=[
   ["swipeTabs","Swipe between tabs","Swipe left or right on the page to change tab"],
+  ["swipeDays","Swipe changes day on Today","On Today, swipe left for the next day, right for the day before"],
+  ["swipeFollow","Page follows your finger","The page slides with your finger. Off: it switches straight away"],
   ["swipeJobs","Swipe jobs to complete or skip","On Today: swipe right for Paid, left to skip"],
   ["keepScroll","Remember where I scrolled","Each tab opens where you left it"],
   ["buzz","Little buzz on taps","A short vibration when you finish, skip or pick a job"],
@@ -3787,29 +3789,97 @@ function swipeCardAt(t){
   main.addEventListener("touchcancel",end,{passive:true});
   main.addEventListener("click",e=>{ if(Date.now()<CSW.until){ e.stopPropagation(); e.preventDefault(); } },true);
 })();
-/* swipe left/right on the page to move between tabs */
+/* swipe the page: on Today it changes day, on the other tabs it changes tab.
+   With "Page follows your finger" the page tracks the finger, then slides out and the next one slides in;
+   let go early (or at the first/last tab) and it springs back. A swipe that starts on a job card stays a
+   Paid/Skip swipe (handled above), so a day swipe can never complete a job. */
 (function(){
-  const main=$("main"); let sx=0,sy=0,st=0,ok=false;
-  const blocked=el=>!!(el&&el.closest&&el.closest("input,select,textarea,.seg,.wkstrip,.sheet,[data-noswipe]")) ;
+  const main=$("main");
+  let sx=0,sy=0,st=0,ok=false,mode="",dx=0,page=null,kind="",busy=false;
+  const blocked=el=>!!(el&&el.closest&&el.closest(kind==="day"?"input,select,textarea,.seg,.sheet,[data-noswipe]":"input,select,textarea,.seg,.wkstrip,.sheet,[data-noswipe]"));
   const scrollsX=el=>{ for(let n=el;n&&n!==main;n=n.parentElement){ if(n.scrollWidth>n.clientWidth+4){ const o=getComputedStyle(n).overflowX; if(o==="auto"||o==="scroll") return true; } } return false; };
+  const curTab=()=>((document.querySelector(".tab.on")||{}).dataset||{}).p||"today";
+  const kindFor=()=>curTab()==="today"&&feelOn("swipeDays")?"day":(feelOn("swipeTabs")?"tab":"");
+  const follow=()=>feelOn("swipeFollow")&&!reducedMotion();
+  const nextTab=dir=>{ const tabs=[...document.querySelectorAll(".tab")], i=tabs.findIndex(x=>x.classList.contains("on")); return tabs[i+dir]||null; };
+  const canGo=dir=>kind==="day"||!!nextTab(dir);
+  const clear=el=>{ if(!el) return; el.style.transition=""; el.style.transform=""; el.style.opacity=""; };
+  // move to the next/previous day or tab; returns the page element now showing
+  function step(dir){
+    if(kind==="day"){ shiftDay(dir); buzz(); return $("p-today"); }
+    const n=nextTab(dir); if(!n) return null;
+    if(HOLD&&HOLD.t) holdCancel();
+    n.click(); return $("p-"+n.dataset.p);
+  }
+  function quickStep(dir){                                   // the old instant switch, with the short slide-in
+    const pg=step(dir); if(!pg||kind!=="day") return;
+    pg.classList.remove("wipe","fromL"); void pg.offsetWidth; pg.classList.add("wipe"); if(dir<0) pg.classList.add("fromL");
+  }
+  function slideThrough(dir){                                // finish a dragged swipe: out one side, in from the other
+    const w=main.clientWidth||400, out=page; busy=true;
+    out.style.transition="transform .16s cubic-bezier(.4,0,1,1),opacity .16s";
+    out.style.transform=`translateX(${-dir*w}px)`; out.style.opacity=".35";
+    setTimeout(()=>{
+      clear(out);
+      const inn=step(dir);
+      if(!inn){ busy=false; return; }
+      inn.classList.remove("wipe","fromL");
+      inn.style.transition="none"; inn.style.transform=`translateX(${dir*w*.6}px)`; inn.style.opacity=".35";
+      void inn.offsetWidth;
+      inn.style.transition="transform .22s cubic-bezier(.15,.8,.25,1),opacity .22s";
+      inn.style.transform="translateX(0)"; inn.style.opacity="1";
+      setTimeout(()=>{ clear(inn); busy=false; },240);
+    },160);
+  }
+  function springBack(){
+    if(!page) return;
+    const el=page; el.style.transition="transform .22s cubic-bezier(.2,.9,.3,1.2),opacity .22s";
+    el.style.transform="translateX(0)"; el.style.opacity="1";
+    setTimeout(()=>clear(el),240);
+  }
   main.addEventListener("touchstart",e=>{
-    const t=e.touches[0]; ok=e.touches.length===1;
-    sx=t.clientX; sy=t.clientY; st=Date.now();
-    if(sx<24||sx>window.innerWidth-24) ok=false;               // leave the edges to Android's back gesture
-    if(blocked(e.target)||scrollsX(e.target)) ok=false;
-    if($("sheet").classList.contains("on")||(SEL&&SEL.ctx)||UI.reorder) ok=false;
-    if(!feelOn("swipeTabs")||swipeCardAt(e.target)) ok=false;   // a job card swipe owns this gesture
+    ok=false; mode=""; dx=0;
+    if(busy||e.touches.length!==1) return;
+    kind=kindFor(); if(!kind) return;
+    const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now();
+    if(sx<24||sx>window.innerWidth-24) return;               // leave the edges to Android's back gesture
+    if(blocked(e.target)||scrollsX(e.target)) return;
+    if($("sheet").classList.contains("on")||(SEL&&SEL.ctx)||UI.reorder) return;
+    if(swipeCardAt(e.target)) return;                        // a job card swipe owns this gesture
+    page=$("p-"+curTab()); ok=!!page; mode="wait";
   },{passive:true});
+  main.addEventListener("touchmove",e=>{
+    if(!ok) return;
+    if(CSW.handled){ ok=false; return; }
+    const t=e.touches[0], mx=t.clientX-sx, my=t.clientY-sy;
+    if(mode==="wait"){
+      if(Math.abs(mx)<10&&Math.abs(my)<10) return;
+      if(Math.abs(mx)<=Math.abs(my)*1.2){ ok=false; return; }   // mostly vertical: let the page scroll
+      mode="drag"; if(HOLD&&HOLD.t) holdCancel();
+    }
+    if(!follow()) return;
+    if(e.cancelable) e.preventDefault();
+    const dir=mx<0?1:-1;
+    dx=canGo(dir)?mx:mx*.25;                                 // nothing that way: resist instead of moving freely
+    page.style.transition="none";
+    page.style.transform=`translateX(${dx}px)`;
+    page.style.opacity=String(1-Math.min(.25,Math.abs(dx)/(main.clientWidth||400)*.3));
+  },{passive:false});
   main.addEventListener("touchend",e=>{
     if(!ok) return; ok=false;
-    if(CSW.handled) return;
-    const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy, dt=Date.now()-st;
-    if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt>600) return;
-    const tabs=[...document.querySelectorAll(".tab")], i=tabs.findIndex(x=>x.classList.contains("on"));
-    const n=tabs[i+(dx<0?1:-1)]; if(!n) return;
-    if(HOLD&&HOLD.t) holdCancel();
-    n.click();
+    const t=e.changedTouches[0], mx=t.clientX-sx, my=t.clientY-sy, ms=Math.max(1,Date.now()-st);
+    const dir=mx<0?1:-1;
+    if(CSW.handled){ springBack(); return; }
+    if(follow()&&mode==="drag"){
+      const w=main.clientWidth||400;
+      const go=(Math.abs(mx)>=w*.3||(Math.abs(mx)>40&&Math.abs(mx)/ms>.5))&&canGo(dir);
+      if(go) slideThrough(dir); else springBack();
+      return;
+    }
+    if(Math.abs(mx)<70||Math.abs(mx)<Math.abs(my)*1.8||ms>600||!canGo(dir)) return;
+    quickStep(dir);
   },{passive:true});
+  main.addEventListener("touchcancel",()=>{ if(ok&&mode==="drag") springBack(); ok=false; },{passive:true});
 })();
 (function rain(){ const r=$("rain"); for(let i=0;i<14;i++){ const d=document.createElement("div"); d.className="drop";
   d.style.left=Math.random()*100+"%"; d.style.animationDuration=(1.6+Math.random()*2.6)+"s";
