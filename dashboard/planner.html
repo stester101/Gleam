@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gleam planner (prototype)</title>
+<style>
+:root{--ink:#04141f;--deep:#07293c;--mid:#0e4b68;--glass:rgba(255,255,255,.075);--edge:rgba(255,255,255,.18);--text:#eef7fb;--dim:rgba(238,247,251,.7);--faint:rgba(238,247,251,.45);--aqua:#7fe3ff;--suds:#f5d67b;--clean:#5fe3b0;--dirt:#ff8f7a;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font:14px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif;color:var(--text);background:linear-gradient(160deg,var(--mid),var(--ink) 60%);min-height:100vh;overflow:hidden}
+button,input{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap;border-bottom:1px solid var(--edge)}
+header h1{font-size:18px;margin:0 auto 0 0;font-weight:700}
+header .sum{color:var(--dim);font-size:12px;width:100%;order:3}
+.btn{background:var(--glass);border:1px solid var(--edge);border-radius:12px;padding:8px 12px;min-height:40px;cursor:pointer}
+.btn.pri{background:var(--aqua);color:var(--ink);border-color:transparent;font-weight:700}
+.btn:disabled{opacity:.4}
+main{display:flex;height:calc(100vh - 92px);min-height:0}
+aside{width:230px;border-right:1px solid var(--edge);padding:12px;overflow:auto;flex:none}
+aside h2{font-size:13px;color:var(--dim);margin:0 0 8px;font-weight:600;text-transform:none}
+#weeks{flex:1;overflow:auto;padding:12px;-webkit-overflow-scrolling:touch}
+.week{margin-bottom:18px}
+.whead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.whead b{font-size:15px}
+.whead span{color:var(--dim);font-size:12px}
+.days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.day{background:var(--glass);border:1px solid var(--edge);border-radius:var(--r);padding:8px;min-height:140px;display:flex;flex-direction:column;gap:6px}
+.day.today{border-color:var(--aqua)}
+.day.over{background:rgba(127,227,255,.18);border-style:dashed}
+.dh{display:flex;justify-content:space-between;font-size:12px;color:var(--dim)}
+.dh b{color:var(--text);font-size:13px}
+.bar{height:5px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--aqua)}
+.bar i.full{background:var(--dirt)}
+.card{background:rgba(255,255,255,.1);border:1px solid var(--edge);border-radius:12px;padding:8px 9px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.card.done{opacity:.45}
+.card.done b{text-decoration:line-through}
+.card.od{border-color:var(--dirt)}
+.card b{display:block;font-size:13px;font-weight:600}
+.card small{color:var(--dim);font-size:11.5px}
+.card.lift{opacity:.4}
+.ghost{position:fixed;left:0;top:0;pointer-events:none;z-index:50;width:200px;background:var(--deep);border:1px solid var(--aqua);border-radius:12px;padding:8px 10px;box-shadow:0 10px 30px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+.ghost b{display:block;font-size:13px}
+.ghost small{color:var(--dim);font-size:11.5px}
+body.dragging,body.dragging *{cursor:grabbing!important}
+.tray{min-height:60px}
+.loadmore{display:block;margin:6px auto 30px}
+.sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:40}
+.sheet{background:var(--deep);border:1px solid var(--edge);border-radius:20px 20px 0 0;padding:16px;width:min(560px,100%);max-height:85vh;overflow:auto;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 4px;font-size:17px}
+.sheet .sub{color:var(--dim);font-size:12.5px;margin-bottom:12px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.acts .btn{flex:1 1 30%}
+.note{color:var(--dim);font-size:12px;margin:8px 0}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--aqua);color:var(--ink);padding:10px 14px;border-radius:12px;font-weight:600;z-index:60;max-width:90vw}
+@media (max-width:820px){
+  main{flex-direction:column;height:auto;min-height:calc(100vh - 92px)}
+  aside{width:auto;border-right:0;border-bottom:1px solid var(--edge);max-height:30vh}
+  .days{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .day{min-height:110px}
+}
+</style></head>
+<body>
+<header>
+  <h1>Gleam planner <span style="color:var(--faint);font-weight:500;font-size:12px">prototype</span></h1>
+  <button class="btn" id="bToday">Today</button>
+  <button class="btn" id="bUndo" disabled>Undo</button>
+  <button class="btn" id="bImport">Import</button>
+  <button class="btn" id="bExport">Export</button>
+  <button class="btn" id="bHours">Day limit</button>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+  <div class="sum" id="sum"></div>
+</header>
+<main>
+  <aside><h2 id="trayTitle">Unscheduled</h2><div class="tray" id="tray"></div></aside>
+  <section id="weeks"></section>
+</main>
+<div id="root"></div>
+<script src="../android/app/src/main/assets/gleam-engine.js"></script>
+<script>
+/* Planner prototype. Uses the shared engine for every scheduling and money rule.
+   Data lives in this browser only (localStorage). Import/Export use Gleam's own backup JSON. */
+const KEY="gleam-planner-proto";
+const DEFAULT_LIMIT=6;
+const SAMPLE={jobs:[
+  {id:"s1",jid:1,name:"Val",addr:"12 Mill Lane",pc:"",roundId:"r1",seq:1,price:16,weeks:4,next:"",last:"",bal:0,ph:"",pay:"Cash",mins:45,status:"active",hist:[]},
+  {id:"s2",jid:2,name:"Mr Patel",addr:"4 Oak Avenue",pc:"",roundId:"r1",seq:2,price:20,weeks:4,next:"",last:"",bal:0,ph:"",pay:"Card",mins:30,status:"active",hist:[]},
+  {id:"s3",jid:3,name:"Evans",addr:"Harcourt Road",pc:"",roundId:"r2",seq:1,price:25,weeks:5,next:"",last:"",bal:0,ph:"",pay:"Cash",mins:60,status:"active",hist:[]},
+  {id:"s4",jid:4,name:"Ryan",addr:"9 Station Road",pc:"",roundId:"r2",seq:2,price:12,weeks:8,next:"",last:"",bal:0,ph:"",pay:"Bank transfer",mins:30,status:"active",hist:[]},
+  {id:"s5",jid:5,name:"Once-off",addr:"Mill Lane shed",pc:"",roundId:"r2",seq:3,price:35,weeks:0,next:"",last:"",bal:0,ph:"",pay:"Cash",mins:90,status:"active",hist:[]}
+],rounds:[{id:"r1",name:"North",order:1},{id:"r2",name:"South",order:2}],dayOrders:{},settings:{dayHours:DEFAULT_LIMIT},meta:{app:"planner-prototype"}};
+let S=load();
+let UNDO=[];
+let weeksShown=12;
+let weekAnchor=weekStart(TODAY());
+seedSampleDates();
+
+function load(){
+  try{const raw=localStorage.getItem(KEY);if(raw){const v=JSON.parse(raw);if(v&&Array.isArray(v.jobs))return normalize(v)}}catch(e){}
+  return normalize(JSON.parse(JSON.stringify(SAMPLE)));
+}
+function normalize(v){
+  v.rounds=v.rounds||[];v.dayOrders=v.dayOrders||{};v.settings=Object.assign({dayHours:DEFAULT_LIMIT},v.settings||{});v.meta=v.meta||{};
+  v.jobs.forEach(j=>{j.hist=j.hist||[];j.status=j.status||"active";j.mins=+j.mins||30;j.price=+j.price||0;j.weeks=+j.weeks||0;recalcBal(j)});
+  return v;
+}
+/* sample jobs get visits this week so the board isn't empty on first open */
+function seedSampleDates(){
+  if(S.jobs.some(j=>j.next)) return;
+  const mon=weekStart(TODAY());
+  const at={s1:0,s2:1,s3:2,s4:3,s5:4};
+  S.jobs.forEach(j=>{ if(at[j.id]!==undefined) j.next=addD(mon,at[j.id]); });
+}
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
+function snap(){ UNDO.push(JSON.stringify(S)); if(UNDO.length>30) UNDO.shift(); $("bUndo").disabled=false; }
+function undo(){ if(!UNDO.length) return; S=JSON.parse(UNDO.pop()); save(); render(); toast("Undone"); $("bUndo").disabled=!UNDO.length; }
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtMins=m=>{const h=Math.floor(m/60),r=m%60;return (h?h+"h":"")+(r?(h?" ":"")+r+"m":"")||"0m"};
+const dayShort=d=>dt(d).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+const weekLabel=mon=>{const a=dt(mon),b=dt(addD(mon,4));return a.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" – "+b.toLocaleDateString("en-GB",{day:"numeric",month:"short"})};
+function weekStart(d){ const x=dt(d), k=(x.getDay()+6)%7; return addD(d,-k); }
+const gbp=v=>"£"+(Math.round((+v||0)*100)/100).toFixed(2).replace(/\.00$/,"");
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.append(t); setTimeout(()=>t.remove(),2200); }
+const jobById=id=>S.jobs.find(j=>j.id===id);
+const roundName=j=>{const r=S.rounds.find(x=>x.id===j.roundId);return r?r.name:""};
+const cleanedOn=(j,d)=>(j.hist||[]).some(h=>h.t==="clean"&&h.d===d);
+
+/* --- board --- */
+function visitsOn(d){
+  const list=[];
+  S.jobs.forEach(j=>{ if(occurrencesBetween(j,d,d,TODAY()).length) list.push(j) });
+  const order=S.dayOrders[d]||[];
+  list.sort((a,b)=>(order.indexOf(a.id)+1||9999)-(order.indexOf(b.id)+1||9999)||a.seq-b.seq);
+  return list;
+}
+function render(){
+  const today=TODAY();
+  // tray: active jobs with no next visit (on-request, or waiting)
+  const tray=S.jobs.filter(j=>j.status==="active"&&!j.next);
+  $("trayTitle").textContent="Unscheduled · "+tray.length;
+  $("tray").innerHTML=tray.length?tray.map(j=>cardHTML(j,null,false)).join(""):'<div class="note">Nothing unscheduled. Jobs with no next visit wait here.</div>';
+  // weeks
+  let html="";
+  for(let w=0;w<weeksShown;w++){
+    const mon=addD(weekAnchor,w*7);
+    let hours=0;
+    let days="";
+    for(let i=0;i<5;i++){
+      const d=addD(mon,i), vs=visitsOn(d);
+      const mins=vs.reduce((s,j)=>s+j.mins,0), lim=(S.settings.dayHours||DEFAULT_LIMIT)*60;
+      hours+=mins;
+      const pct=Math.min(100,Math.round(mins/lim*100));
+      days+=`<div class="day ${d===today?"today":""}" data-date="${d}">
+        <div class="dh"><b>${dt(d).toLocaleDateString("en-GB",{weekday:"short"})} ${dt(d).getDate()}</b><span>${fmtMins(mins)}</span></div>
+        <div class="bar"><i class="${mins>lim?"full":""}" style="width:${pct}%"></i></div>
+        ${vs.map(j=>cardHTML(j,d,true)).join("")||'<div class="note">Free</div>'}
+      </div>`;
+    }
+    html+=`<div class="week"><div class="whead"><b>Week of ${weekLabel(mon)}</b><span>${fmtMins(hours)} booked</span></div><div class="days">${days}</div></div>`;
+  }
+  html+=`<button class="btn loadmore" id="more">Show 12 more weeks</button>`;
+  $("weeks").innerHTML=html;
+  $("more").onclick=()=>{weeksShown+=12;render()};
+  const todayJobs=visitsOn(today).length;
+  $("sum").textContent=`${S.jobs.filter(j=>j.status==="active").length} active jobs · ${todayJobs} today · ${tray.length} unscheduled`;
+}
+function cardHTML(j,d,onDay){
+  const done=d&&cleanedOn(j,d);
+  const od=d&&d<TODAY()&&!done;
+  return `<div class="card ${done?"done":""} ${od?"od":""}" data-job="${j.id}" data-date="${d||""}">
+    <b>${esc(j.name||j.addr)}</b><small>${esc(j.addr)}</small><br>
+    <small>${fmtMins(j.mins)} · ${gbp(j.price)}${j.weeks?" · every "+j.weeks+"w":" · on request"}</small>
+  </div>`;
+}
+
+/* --- taps --- */
+document.addEventListener("click",e=>{
+  const c=e.target.closest(".card");
+  if(c&&!c.dataset.dragged){ openJob(c.dataset.job,c.dataset.date||null) }
+});
+
+/* --- drag --- */
+let drag=null, holdT=null;
+document.addEventListener("pointerdown",e=>{
+  const c=e.target.closest(".card"); if(!c||e.button>0) return;
+  const start={x:e.clientX,y:e.clientY,el:c,id:e.pointerId,type:e.pointerType};
+  const begin=()=>{
+    if(drag) return;
+    const j=jobById(c.dataset.job), d=c.dataset.date||null;
+    if(d&&cleanedOn(j,d)) return;                     // done visits don't move
+    const g=c.cloneNode(true); g.classList.add("ghost");
+    document.body.append(g); document.body.classList.add("dragging"); c.classList.add("lift");
+    drag={job:j.id,from:d,el:c,ghost:g,pid:start.id}; c.dataset.dragged="1";
+    place(e.clientX,e.clientY);
+  };
+  if(start.type==="touch") holdT=setTimeout(begin,170);      // hold to lift on touch, so scrolling still works
+  const move=ev=>{
+    if(ev.pointerId!==start.id) return;
+    if(drag){ ev.preventDefault(); place(ev.clientX,ev.clientY); return; }
+    if(start.type!=="touch"&&Math.hypot(ev.clientX-start.x,ev.clientY-start.y)>6) begin();
+    else if(start.type==="touch"&&Math.hypot(ev.clientX-start.x,ev.clientY-start.y)>9){ clearTimeout(holdT); cleanup(); }
+  };
+  const up=ev=>{
+    if(ev.pointerId!==start.id) return;
+    clearTimeout(holdT);
+    window.removeEventListener("pointermove",move);
+    window.removeEventListener("pointerup",up);
+    window.removeEventListener("pointercancel",up);
+    if(!drag){ cleanup(); return }
+    const target=dropTarget(ev.clientX,ev.clientY);
+    const d=drag; drag=null;
+    d.ghost.remove(); d.el.classList.remove("lift"); document.body.classList.remove("dragging");
+    setTimeout(()=>{ delete d.el.dataset.dragged },0);
+    if(target&&target!==d.from) askMove(d.job,target,d.from);
+    else if(!target) toast("Drop it on a day to move it");
+  };
+  window.addEventListener("pointermove",move,{passive:false});
+  window.addEventListener("pointerup",up);
+  window.addEventListener("pointercancel",up);
+});
+function cleanup(){ /* nothing lifted yet */ }
+function place(x,y){ if(!drag) return; drag.ghost.style.left=x+"px"; drag.ghost.style.top=y+"px"; document.querySelectorAll(".day.over").forEach(n=>n.classList.remove("over")); const t=dropTarget(x,y); if(t){ const col=document.querySelector(`.day[data-date="${t}"]`); if(col) col.classList.add("over") } }
+function dropTarget(x,y){
+  const el=document.elementFromPoint(x,y); const col=el&&el.closest(".day");
+  return col?col.dataset.date:null;
+}
+
+/* --- sheets --- */
+function openSheet(html){ closeSheet(); const bg=document.createElement("div"); bg.className="sheetbg"; bg.id="sb"; bg.innerHTML=`<div class="sheet">${html}</div>`; bg.addEventListener("click",e=>{ if(e.target===bg) closeSheet() }); document.body.append(bg); return bg; }
+function closeSheet(){ const s=$("sb"); if(s) s.remove(); }
+function openJob(id,d){
+  const j=jobById(id); if(!j) return;
+  const isFuture=d&&d>TODAY();
+  const done=d&&cleanedOn(j,d);
+  const rep=j.weeks?`Every ${j.weeks} weeks · next ${dayShort(j.next||d)}`:"On request";
+  openSheet(`<h3>${esc(j.name||j.addr)}</h3><div class="sub">${esc(j.addr)} · ${esc(roundName(j))} · ${fmtMins(j.mins)} · ${gbp(j.price)}</div>
+    <div class="note">${rep}${d?" · this visit "+dayShort(d):""}${j.bal>0?" · owes "+gbp(j.bal):""}</div>
+    ${d&&!done?`<div class="acts">
+      <button class="btn pri" data-a="paid" ${isFuture?"disabled":""}>Paid</button>
+      <button class="btn" data-a="part" ${isFuture?"disabled":""}>Part paid</button>
+      <button class="btn" data-a="unpaid" ${isFuture?"disabled":""}>Not paid</button></div>
+      ${isFuture?'<div class="note">Visits can only be completed on or after the day itself.</div>':""}`:""}
+    ${done?'<div class="note">Already cleaned on this day.</div>':""}
+    <div class="acts"><button class="btn" data-a="move" ${done?"disabled":""}>Move…</button><button class="btn" data-a="close">Close</button></div>`);
+  $("sb").onclick=e=>{
+    const a=e.target.closest("[data-a]"); if(!a) return;
+    if(a.dataset.a==="close") return closeSheet();
+    if(a.dataset.a==="move") return askMove(id,null,d);
+    const how={paid:"full",part:"part",unpaid:"none"}[a.dataset.a];
+    complete(j,d,how);
+  };
+}
+function complete(j,d,how){
+  snap();
+  const paid=how==="full"?j.price:how==="part"?0:0;
+  if(how==="part"){
+    const v=prompt("Amount paid (£)","");
+    const amt=money(v); if(!amt){ UNDO.pop(); toast("Enter an amount"); return }
+    return finish(j,d,amt,v);
+  }
+  finish(j,d,paid,how);
+}
+function finish(j,d,paidAmt,how){
+  const seq=(S.meta.seq=(S.meta.seq||0)+1);
+  const e={id:"p"+Date.now().toString(36)+seq.toString(36),d:d||TODAY(),t:"clean",a:j.price,p:+paidAmt||0,m:(+paidAmt>0?"Cash":""),n:(+paidAmt>=j.price?"Paid":+paidAmt>0?"Part paid":"Not paid")};
+  if(!applyCleanEntry(j,e,seq)){ UNDO.pop(); toast("Already cleaned that day"); return }
+  save(); closeSheet(); render(); toast(`${e.n}: ${j.name||j.addr}`);
+  $("bUndo").disabled=!UNDO.length;
+}
+function askMove(id,target,from){
+  const j=jobById(id);
+  if(!target){ return openSheet(`<h3>Move to…</h3><div class="sub">${esc(j.name||j.addr)}</div>
+    <label class="note">Date</label><input id="mvDate" type="date" value="${from||TODAY()}" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--edge);background:var(--glass)">
+    <div class="acts"><button class="btn pri" id="mvGo">Next</button><button class="btn" data-a="close">Cancel</button></div>`).querySelector("#mvGo")?.addEventListener("click",()=>{ const v=$("mvDate").value; if(v) askMove(id,v,from) }) }
+  if(!j.weeks){ snap(); applyMove(j,target,true); save(); render(); return toast(`${j.name||j.addr} moved to ${dayShort(target)}`) }
+  const bg=openSheet(`<h3>Move ${esc(j.name||j.addr)} to ${dayShort(target)}?</h3>
+    <div class="sub">Keep rhythm moves this visit only; the cycle carries on as before. Shift schedule makes this date the new cycle from now on.</div>
+    <div class="acts"><button class="btn pri" data-a="keep">Keep rhythm</button><button class="btn" data-a="shift">Shift schedule</button><button class="btn" data-a="close">Cancel</button></div>`);
+  bg.onclick=e=>{
+    const a=e.target.closest("[data-a]"); if(!a) return;
+    if(a.dataset.a==="close") return closeSheet();
+    snap(); applyMove(j,target,a.dataset.a==="keep"); save(); closeSheet(); render();
+    toast(`${j.name||j.addr} → ${dayShort(target)}`);
+  };
+}
+
+/* --- header --- */
+$("bToday").onclick=()=>{ weekAnchor=weekStart(TODAY()); weeksShown=12; render(); };
+$("bUndo").onclick=undo;
+$("bImport").onclick=()=>$("fileIn").click();
+$("fileIn").onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const v=JSON.parse(await f.text());
+    if(!v||!Array.isArray(v.jobs)) throw new Error("not a Gleam backup");
+    snap(); S=normalize(v); save(); render(); toast(`Imported ${S.jobs.length} jobs`);
+  }catch(err){ toast("Couldn't read that backup") }
+  e.target.value="";
+};
+$("bExport").onclick=()=>{
+  const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="gleam-backup-"+TODAY()+".json"; document.body.append(a); a.click(); a.remove();
+};
+$("bHours").onclick=()=>{
+  const cur=S.settings.dayHours||DEFAULT_LIMIT;
+  openSheet(`<h3>Day limit</h3><div class="sub">The bar on each day turns red above this many hours.</div>
+    <input id="lim" type="number" min="1" max="12" step="0.5" value="${cur}" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--edge);background:var(--glass)">
+    <div class="acts"><button class="btn pri" id="limGo">Save</button><button class="btn" data-a="close">Cancel</button></div>`);
+  $("sb").onclick=e=>{ const a=e.target.closest("[data-a]"); if(a&&a.dataset.a==="close") closeSheet() };
+  $("limGo").onclick=()=>{ const v=+$("lim").value; if(v>0){ S.settings.dayHours=v; save(); closeSheet(); render() } };
+};
+
+render();
+</script>
+</body></html>

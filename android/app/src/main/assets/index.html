@@ -730,6 +730,7 @@ body.bigbtn .card .r1l,body.bigbtn .card .grow{min-width:0}
   <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAct"></button></div>
 </div>
 
+<script src="gleam-engine.js"></script>
 <script>
 "use strict";
 
@@ -844,13 +845,8 @@ const nativeBooted=new Promise(r=>nativeBootDone=r);
 let nativeApplying=false;
 function applyNativeOp(op){
   const e=op&&op.entry, j=e&&S.jobs.find(x=>x.id===op.job);
-  if(!j||e.t!=="clean"||!e.d) return false;
-  j.hist=j.hist||[];
-  if(j.hist.some(h=>h.id===e.id||(h.t==="clean"&&h.d===e.d))) return false;
-  j.last=e.d;
-  advanceNext(j,e.d);
-  j.hist.push({id:e.id,d:e.d,seqn:HSEQ++,t:"clean",a:+e.a||0,p:+e.p||0,m:e.m||"",n:e.n||""});
-  recalcBal(j);
+  if(!applyCleanEntry(j,e,HSEQ)) return false;   // shared rules: gleam-engine.js
+  HSEQ++;
   return true;
 }
 async function receiveNativeState(raw){
@@ -940,14 +936,9 @@ const SEED_STATE={"jobs":[{"id":"j2238593","jid":2238593,"name":"","addr":"56 Ol
 const CSV_HEAD="Customer Name,Customer Company,Customer Address,Customer Postcode,Customer Phone 1,Customer Phone 2,Customer Phone 3,Customer Email,Customer Email Cc,Customer Latitude,Customer Longitude,Customer Ref,Payment Method,Payment Frequency,Payment Next Due,GoCardless Mandate,GoCardless Status,Customer Notes,Starting Balance,Starting Balance Date,Balance,Balance Date,Credit Limit,User,Round,Day,Round Index,Seq Round Index,Reference,Job Contact Name,Job Company,Job Address,Job Postcode,Job Phone 1,Job Phone 2,Job Phone 3,Job Email,Job Email Cc,Job Latitude,Job Longitude,Task,Description,Notes,Price,Sales Tax,Allowed Days,Frequency,Time Required,Status,Appointments,Date Created,Start Date,Last Done/Skipped,Next Due,Sales Source,Sales Source Ref,Price Since,Aworka Job ID,Aworka Customer ID";
 
 /* ================= UTILITIES ================= */
-const D=864e5, $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id);   // D, dt, iso, TODAY, addD, delta, recalcBal, advanceNext, money: gleam-engine.js
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function ymd(n){ if(!n) return ""; const s=String(n).padStart(6,"0"); return "20"+s.slice(0,2)+"-"+s.slice(2,4)+"-"+s.slice(4); }
-const dt=s=>new Date(s+"T00:00:00");
-function iso(d){ const z=new Date(d); z.setMinutes(z.getMinutes()-z.getTimezoneOffset()); return z.toISOString().slice(0,10); }
-const TODAY=()=>iso(new Date());
-// calendar-day arithmetic in UTC: adding n*24h to local midnight drifts a day across a clock change
-const addD=(s,n)=>{ const p=s.split("-").map(Number); return new Date(Date.UTC(p[0],p[1]-1,p[2]+n)).toISOString().slice(0,10); };
 const daysBetween=(a,b)=>Math.round((dt(b)-dt(a))/D);
 const uk=s=>s?s.slice(8,10)+"/"+s.slice(5,7)+"/"+s.slice(0,4):"—";
 const shortD=s=>s?dt(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}):"—";
@@ -1097,25 +1088,7 @@ const HLABEL={opening:"Opening balance",payment:"Payment",writeoff:"Written off"
   charge:"Clean charged",done:"Cleaned"};
 const MONEY_TYPES=["clean","payment","opening","adjustment","writeoff","charge","done","legacy_payment","legacy_writeoff"];
 const isMoney=h=>MONEY_TYPES.includes(h.t);
-/* what an entry does to the balance (signed) */
-function delta(h){
-  const a=+h.a||0;
-  switch(h.t){
-    case "clean":     return a-(+h.p||0);
-    case "opening":
-    case "adjustment":
-    case "charge":    return a;
-    case "payment":
-    case "writeoff":
-    case "legacy_payment":
-    case "legacy_writeoff": return -a;
-    default:          return 0;   // price, skip, done, legacy_price
-  }
-}
-const sortHist=h=>h.slice().sort((a,b)=> a.d<b.d?-1 : a.d>b.d?1 : (a.seqn||0)-(b.seqn||0));
-function recalcBal(j){
-  j.bal=Math.round(sortHist(j.hist||[]).reduce((b,h)=>b+delta(h),0)*100)/100;
-}
+/* delta(h), sortHist and recalcBal live in gleam-engine.js */
 function recalcAll(){ S.jobs.forEach(recalcBal); }
 let HSEQ=0;
 function entry(j,e){
@@ -1149,22 +1122,7 @@ function owingSince(j){
 }
 const currentPrice=j=>+j.price||0;
 
-/* BUG-01 + BUG-02 fix: advance from max(j.next, the day it was actually done),
-   and always read/clear the keep-rhythm anchor. `onDate` lets a job be completed
-   on a past day (day navigation, or a back-dated completion from Customers). */
-function advanceNext(j,onDate){
-  // on-request jobs: once done (or skipped) they're no longer due on any date
-  if(!(j.weeks>0)){ j.next=""; j.anchor=null; return; }
-  const d=onDate||TODAY();
-  if(j.anchor){
-    let n=addD(j.anchor,j.weeks*7);
-    while(dt(n)<=dt(d)) n=addD(n,j.weeks*7);
-    j.next=n; j.anchor=null;
-    return;
-  }
-  const basis=(j.next && dt(j.next)>dt(d))?j.next:d;
-  j.next=addD(basis,j.weeks*7);
-}
+/* advanceNext lives in gleam-engine.js (keep-rhythm anchor, on-request jobs, back-dated completions) */
 
 function seed(){
   const v=JSON.parse(JSON.stringify(SEED_STATE));
@@ -1878,12 +1836,7 @@ function doPart(id){
   const how=$("partHow").value, d=($("partDate")&&$("partDate").value)||UI.day||TODAY();
   closeSheet(); finishDone(id,"part",amt,how,d);
 }
-const money=v=>{
-  let t=String(v==null?"":v).trim();
-  if(!t.includes(".")&&/\d,\d{1,2}$/.test(t)) t=t.replace(/,(\d{1,2})$/,".$1");   // comma used as the decimal point
-  return Math.round((parseFloat(t.replace(/[^0-9.\-]/g,""))||0)*100)/100;
-};
-/* one-tap payment method for Paid: Cash / Bank / Card, defaulting to how they usually pay */
+/* money() lives in gleam-engine.js; one-tap payment method for Paid: Cash / Bank / Card, defaulting to how they usually pay */
 const PAY_CHIPS=[["Cash","Cash"],["Bank transfer","Bank"],["Card","Card"]];
 const PAYM={};
 function payChips(id,def){

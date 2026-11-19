@@ -11,8 +11,10 @@ const fnSrc = (name) => {
   for (; i < js.length; i++) { if (js[i] === "{") depth++; else if (js[i] === "}" && --depth === 0) break; }
   return js.slice(start, i + 1);
 };
-const helpers = ["iso", "delta", "recalcBal", "advanceNext", "applyNativeOp"].map(fnSrc).join("\n");
-const consts = [/const D=.*?;/, /const TODAY=.*;/, /const sortHist=.*;/, /const dt=.*;/, /const addD=.*;/].map(grab).join("\n");
+// the scheduling and money rules now live in gleam-engine.js, shared with the planner dashboard
+const engine = fs.readFileSync(require("path").join(require("path").dirname(process.argv[2]), "gleam-engine.js"), "utf8");
+const helpers = engine + "\n" + fnSrc("applyNativeOp");
+const consts = "";
 const S = { jobs: [{ id: "j1", price: 20, weeks: 4, next: "2026-11-12", last: "2026-10-15", hist: [{ id: "o", d: "2026-01-01", t: "opening", a: 5 }] }] };
 const run = new Function("S", `let HSEQ=0;\n${consts}\n${helpers}\nreturn {applyNativeOp,recalcBal};`)(S);
 const j = S.jobs[0]; run.recalcBal(j);
@@ -35,9 +37,23 @@ ok(k.next==="2026-11-18", "4-weekly across DST lands on same weekday");
 const o = { weeks: 0, next: "2026-11-12" }; run2.advanceNext(o, "2026-11-12");
 ok(o.next==="", "on-request job no longer due after completion");
 // --- batch C additions ---
-const moneySrc = js.match(/const money=v=>\{[\s\S]*?\n\};/)[0];
-const money = new Function(moneySrc + "\nreturn money;")();
+const money = new Function(engine + "\nreturn money;")();
 ok(money("12,50")===12.5, "money 12,50 -> 12.5");
 ok(money("£1,234.50")===1234.5, "money £1,234.50");
 ok(money("1,234")===1234, "money 1,234 thousands");
 ok(money("-12.00")===-12, "money negative");
+// --- planner additions: visits and moves, shared with the dashboard ---
+const rules = new Function(engine + "\nreturn {occurrencesBetween,applyMove,advanceNext,applyCleanEntry};")();
+const vj = { id: "v1", weeks: 4, next: "2026-11-17", status: "active", hist: [] };
+ok(JSON.stringify(rules.occurrencesBetween(vj, "2026-11-16", "2026-12-31", "2026-11-17")) === '["2026-11-17","2026-12-15"]', "weekly visits project forward 4-weekly");
+const od = { id: "v2", weeks: 4, next: "2026-11-10", status: "active", hist: [] };
+ok(rules.occurrencesBetween(od, "2026-11-09", "2026-11-30", "2026-11-17").join() === "2026-11-10", "overdue visit shows only on its own day");
+ok(rules.occurrencesBetween({ ...vj, status: "paused" }, "2026-11-16", "2026-11-30", "2026-11-17").length === 0, "paused job has no visits");
+rules.applyMove(vj, "2026-11-19", true);
+ok(vj.next === "2026-11-19" && vj.anchor === "2026-11-17", "keep rhythm: visit moves, anchor kept");
+const sj = { id: "v3", weeks: 4, next: "2026-11-17", status: "active", hist: [] };
+rules.applyMove(sj, "2026-11-19", false);
+ok(sj.next === "2026-11-19" && sj.anchor === null, "shift schedule: new date becomes the cycle");
+const ob = { id: "v4", weeks: 0, next: "2026-11-17", status: "active", hist: [] };
+rules.applyMove(ob, "2026-11-20", true);
+ok(ob.next === "2026-11-20" && ob.anchor === undefined, "on-request job moves with no anchor");
