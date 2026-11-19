@@ -24,7 +24,19 @@ class QuickCompleteReceiver : BroadcastReceiver() {
         }
     }
 
+    private fun refreshAll(context: Context) {
+        GleamWidgetProvider.updateAll(context)
+        NextJobWidgetProvider.updateAll(context)
+        QuickCompleteWidgetProvider.updateAll(context)
+    }
+
     private fun handle(context: Context, intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_UNDO, false)) {
+            val ok = NativeStateStore.undoLast(context)
+            refreshAll(context)
+            toast(context, if (ok) "Undone" else "Too late to undo, open Gleam to check")
+            return
+        }
         val jobId = intent.getStringExtra(EXTRA_JOB_ID).orEmpty()
         val paid = intent.getBooleanExtra(EXTRA_PAID, false)
         if (jobId.isBlank()) return
@@ -44,9 +56,14 @@ class QuickCompleteReceiver : BroadcastReceiver() {
 
         val result = NativeStateStore.quickComplete(context, jobId, paid)
         if (result != NativeStateStore.QuickResult.DONE) SnapshotStore.refresh(context)
-        GleamWidgetProvider.updateAll(context)
-        NextJobWidgetProvider.updateAll(context)
-        QuickCompleteWidgetProvider.updateAll(context)
+        refreshAll(context)
+        if (result == NativeStateStore.QuickResult.DONE) {
+            // the UNDO button goes away when its window closes
+            val appContext = context.applicationContext
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                QuickCompleteWidgetProvider.updateAll(appContext)
+            }, NativeStateStore.UNDO_WINDOW_MS + 200)
+        }
         val message = when (result) {
             NativeStateStore.QuickResult.DONE -> if (paid) "Cleaned · paid" else "Cleaned · not paid"
             NativeStateStore.QuickResult.NOT_DUE -> "Already done"
@@ -58,6 +75,7 @@ class QuickCompleteReceiver : BroadcastReceiver() {
     companion object {
         const val EXTRA_JOB_ID = "job_id"
         const val EXTRA_PAID = "paid"
+        const val EXTRA_UNDO = "undo"
     }
 }
 

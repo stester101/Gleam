@@ -86,6 +86,47 @@ object NativeStateStore {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getLong(REVISION, 0L)
 
+    /** How long a home-screen tap can be undone. */
+    const val UNDO_WINDOW_MS = 6000L
+
+    data class Undoable(val jobId: String, val address: String)
+
+    /**
+     * The most recent home-screen tap, if it can still be undone: inside the window, and its
+     * operation is still the last pending one (the app hasn't saved it yet).
+     */
+    @Synchronized
+    fun undoable(context: Context): Undoable? {
+        val p = prefs(context)
+        val opId = p.getString("undoOpId", "").orEmpty()
+        if (opId.isBlank()) return null
+        if (System.currentTimeMillis() - p.getLong("undoAt", 0L) > UNDO_WINDOW_MS) return null
+        val list = ops(context)
+        if (list.length() == 0) return null
+        if (list.optJSONObject(list.length() - 1)?.optString("id") != opId) return null
+        return Undoable(p.getString("undoJob", "").orEmpty(), p.getString("undoAddress", "").orEmpty())
+    }
+
+    /** Puts the state back to just before the last home-screen tap. False if that's no longer possible. */
+    @Synchronized
+    fun undoLast(context: Context): Boolean {
+        if (undoable(context) == null) return false
+        val p = prefs(context)
+        val prevState = p.getString("undoPrevState", null) ?: return false
+        p.edit()
+            .putString(STATE, prevState)
+            .putString(OPS, p.getString("undoPrevOps", "[]").orEmpty())
+            .putBoolean(DIRTY, p.getBoolean("undoPrevDirty", false))
+            .putLong(REVISION, System.currentTimeMillis())
+            .remove("undoOpId")
+            .remove("undoPrevState")
+            .remove("undoPrevOps")
+            .putLong("undoAt", 0L)
+            .commit()
+        SnapshotStore.updateFromState(context, prevState)
+        return true
+    }
+
     @Synchronized
     fun quickComplete(context: Context, jobId: String, paid: Boolean): QuickResult {
         val raw = state(context)
@@ -159,11 +200,15 @@ object NativeStateStore {
             val oldBal = j.optDouble("bal", 0.0)
             j.put("bal", Math.round((oldBal + price - paidAmount) * 100.0) / 100.0)
 
+            val prevOps = ops(context).toString()
+            val prevDirty = prefs(context).getBoolean(DIRTY, false)
+            val opId = "op" + UUID.randomUUID().toString().replace("-", "").take(14)
             val pending = ops(context).put(JSONObject().apply {
-                put("id", "op" + UUID.randomUUID().toString().replace("-", "").take(14))
+                put("id", opId)
                 put("job", jobId)
                 put("entry", entry)
             })
+            val address = j.optString("addr").ifBlank { j.optString("name", "Customer") }
 
             val updated = root.toString()
             prefs(context).edit()
@@ -171,6 +216,14 @@ object NativeStateStore {
                 .putString(OPS, pending.toString())
                 .putLong(REVISION, System.currentTimeMillis())
                 .putBoolean(DIRTY, true)
+                // remember this one tap so the widget can undo it for a few seconds
+                .putString("undoOpId", opId)
+                .putString("undoJob", jobId)
+                .putString("undoAddress", address)
+                .putString("undoPrevState", raw)
+                .putString("undoPrevOps", prevOps)
+                .putBoolean("undoPrevDirty", prevDirty)
+                .putLong("undoAt", System.currentTimeMillis())
                 .commit()
 
             SnapshotStore.updateFromState(context, updated)

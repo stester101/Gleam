@@ -29,6 +29,12 @@ class QuickCompleteWidgetProvider : AppWidgetProvider() {
             val job = s.todayJobs.firstOrNull()
             val views = RemoteViews(context.packageName, R.layout.widget_quick_complete)
 
+            // right after a Paid / Not paid tap, offer UNDO for a few seconds
+            NativeStateStore.undoable(context)?.let { undo ->
+                showUndo(context, manager, widgetId, views, undo)
+                return
+            }
+
             views.setTextViewText(R.id.quick_address, job?.address ?: "Nothing left today")
             if (job != null && job.price > 0) {
                 views.setViewVisibility(R.id.quick_price, View.VISIBLE)
@@ -63,6 +69,43 @@ class QuickCompleteWidgetProvider : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.quick_address, open)
             manager.updateAppWidget(widgetId, views)
+        }
+
+        private fun showUndo(
+            context: Context,
+            manager: AppWidgetManager,
+            widgetId: Int,
+            views: RemoteViews,
+            undo: NativeStateStore.Undoable
+        ) {
+            views.setTextViewText(R.id.quick_address, "Cleaned ✓  " + undo.address)
+            views.setViewVisibility(R.id.quick_price, View.GONE)
+            views.setViewVisibility(R.id.quick_actions, View.VISIBLE)
+            views.setTextViewText(R.id.quick_paid, "UNDO")
+            views.setOnClickPendingIntent(R.id.quick_paid, undoIntent(context, widgetId))
+            views.setTextViewText(R.id.quick_unpaid, "SAVED ✓")
+            views.setOnClickPendingIntent(R.id.quick_unpaid, null)
+            val open = PendingIntent.getActivity(
+                context, 300 + widgetId,
+                Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.quick_address, open)
+            manager.updateAppWidget(widgetId, views)
+        }
+
+        private fun undoIntent(context: Context, widgetId: Int): PendingIntent {
+            val intent = Intent(context, QuickCompleteReceiver::class.java).apply {
+                putExtra(QuickCompleteReceiver.EXTRA_UNDO, true)
+            }
+            return PendingIntent.getBroadcast(
+                context,
+                widgetId * 10 + 3,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
         }
 
         private fun actionIntent(
