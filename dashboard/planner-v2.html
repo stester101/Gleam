@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gleam Planner</title>
+<style>
+:root{
+  --bg:#FAFAF7;--surface:#FFFFFF;--sunken:#F2F3EE;--line:#E4E6DF;--line-strong:#8E9388;
+  --text:#22261F;--muted:#6D7268;--heading:#22512F;
+  --primary:#357545;--primary-hover:#22512F;--on-primary:#FFFFFF;--primary-soft:#EEF6F0;
+  --warn-soft:#F6EBCB;--on-warn:#7A5E17;--error:#B4463F;--error-soft:#FBEDEC;--info:#3F6E91;--info-soft:#EAF1F7;
+  --shadow-md:0 1px 2px rgba(34,81,47,.06),0 6px 16px rgba(34,81,47,.08);
+  --shadow-lg:0 2px 4px rgba(34,81,47,.06),0 16px 40px rgba(34,81,47,.14);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141914;--surface:#1C221C;--sunken:#111511;--line:#2D352D;--line-strong:#6B7569;
+  --text:#E6EAE2;--muted:#9AA394;--heading:#9FD3AA;--primary:#5AA86C;--primary-hover:#7CC48D;--on-primary:#0E1A11;--primary-soft:#1E2E22;
+  --warn-soft:#3A3115;--on-warn:#E8CB78;--error:#E58A82;--error-soft:#3A1F1D;--info:#8DB7D6;--info-soft:#1D2A35;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font:400 15px/1.4 var(--font);-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;min-height:40px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);padding:0 14px}
+button.pri{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:600}
+button.bad{border-color:var(--error);color:var(--error)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+input,select{min-height:40px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);padding:0 10px;max-width:100%}
+header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 16px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:1200px;margin:0 auto}
+h1{font-size:18px;margin:0 8px 0 0;color:var(--heading)}
+.sp{flex:1}
+.stats{display:flex;flex-wrap:wrap;gap:8px;max-width:1200px;margin:8px auto 0}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 12px;min-width:120px}
+.stat span{display:block;font-size:12px;color:var(--muted)}
+.stat b{font-size:17px}
+main{max-width:1200px;margin:0 auto;padding:12px 16px 80px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 10px}
+.week{margin-bottom:14px}
+.wh{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin:0 2px 6px}
+.wh b{color:var(--heading)}.wh span{color:var(--muted);font-size:13px}
+.wk.cur .wh b::after{content:" · this week";color:var(--primary);font-weight:500}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-height:104px;padding:6px;min-width:0;transition:background .15s,border-color .15s}
+.day.past{background:var(--sunken)}
+.day.today{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.day.over{border-color:var(--error)}
+.day.drop{background:var(--primary-soft);border:2px dashed var(--primary)}
+.dh{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:4px;gap:4px}
+.dh b{color:var(--text);font-size:13px}
+.hrs{font-variant-numeric:tabular-nums}
+.over .hrs{color:var(--error);font-weight:700}
+.cap{height:4px;border-radius:2px;background:var(--line);margin:0 0 6px;overflow:hidden}
+.cap i{display:block;height:100%;background:var(--primary)}
+.over .cap i{background:var(--error)}
+.chip{display:block;width:100%;text-align:left;min-height:34px;padding:4px 7px;margin-bottom:4px;border-radius:8px;border:1px solid var(--line);background:var(--primary-soft);
+  font-size:12px;line-height:1.25;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:grab;touch-action:pan-y}
+.chip small{display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.chip.proj{background:transparent;border-style:dashed;cursor:pointer;opacity:.8}
+.chip.done{background:var(--sunken);cursor:default}
+.chip.late{background:var(--warn-soft);border-color:var(--on-warn)}
+.chip.clash{border-color:var(--error);background:var(--error-soft)}
+.chip .flag{color:var(--error);font-weight:700}
+.chip.lift{opacity:.35}
+.ghost{position:fixed;left:0;top:0;z-index:300;pointer-events:none;width:170px;box-shadow:var(--shadow-lg);cursor:grabbing;background:var(--surface)}
+.more{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.scrim{position:fixed;inset:0;background:rgba(20,25,20,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.sheet{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:460px;max-height:92vh;overflow:auto;padding:18px}
+.sheet h2{margin:0 0 2px;font-size:18px;color:var(--heading)}
+.sheet p{margin:2px 0 10px;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.row>*{flex:1 1 auto}
+.sec{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.sec h3{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.note{background:var(--info-soft);color:var(--info);border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0}
+.note.err{background:var(--error-soft);color:var(--error)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:400;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+.empty{text-align:center;padding:40px 16px;background:var(--surface);border:1px dashed var(--line-strong);border-radius:16px}
+@media (max-width:640px){
+  .days{grid-template-columns:1fr}
+  .day{min-height:0}
+  .chip{min-height:44px}
+  .stat{flex:1 1 40%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Gleam Planner</h1>
+    <button id="undo" disabled>Undo</button>
+    <span class="sp"></span>
+    <label style="font-size:13px;color:var(--muted)">Day limit <input id="cap" type="number" min="1" max="16" step="0.5" style="width:70px"> h</label>
+    <button id="imp">Import backup</button>
+    <button id="exp">Export backup</button>
+    <input id="file" type="file" accept=".json,application/json" hidden>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+<main>
+  <p class="hint">Press and hold a visit for a moment, then drag it to another day. On a mouse, just drag. Tap a visit to complete or move it. Dashed visits are later repeats and move with their job.</p>
+  <div id="weeks"></div>
+  <div class="more"><button id="more" class="pri">Show 4 more weeks</button><button id="less">Show 4 fewer</button></div>
+</main>
+<div id="layer"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="../android/app/src/main/assets/gleam-engine.js"></script>
+<script>
+/*PURE-START*/
+/* Pure planner rules. They use only the engine globals, so tests can run them without a DOM. */
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+/* GBP with comma decimals: 1234.5 -> £1.234,50 */
+function fmtMoney(n){
+  const v=Math.round((+n||0)*100)/100, neg=v<0, p=Math.abs(v).toFixed(2).split(".");
+  return (neg?"-":"")+"£"+p[0].replace(/\B(?=(\d{3})+(?!\d))/g,".")+","+p[1];
+}
+function fmtHours(h){ return (Math.round(h*10)/10).toString().replace(".",",")+" h"; }
+function weekStart(s){ return addD(s,-((dt(s).getDay()+6)%7)); }
+function jobMins(j){ return +j.mins>0?+j.mins:30; }
+/* every visit from start..end: {id, date, first}. first = the job's own next visit (the only one that can move or complete) */
+function visitsByDay(jobs,start,end,today){
+  const map={};
+  for(const j of jobs||[]){
+    for(const d of occurrencesBetween(j,start,end,today)){ (map[d]=map[d]||[]).push({id:j.id,date:d,first:d===j.next}); }
+  }
+  return map;
+}
+function hoursOn(jobs,list){
+  const by={}; (jobs||[]).forEach(j=>by[j.id]=j);
+  return (list||[]).reduce((s,v)=>s+(by[v.id]?jobMins(by[v.id]):0),0)/60;
+}
+/* complete the due visit as paid, part paid or not paid. Future visits cannot be completed. */
+function completeVisit(j,date,kind,part,today){
+  const t=today||TODAY();
+  if(!j||j.next!==date) return {ok:false,err:"Only the next visit of a job can be completed."};
+  if(date>t) return {ok:false,err:"A future visit cannot be completed yet."};
+  const a=+j.price||0; let p=0;
+  if(kind==="paid") p=a;
+  else if(kind==="part"){ p=money(part); if(!(p>0&&p<a)) return {ok:false,err:"Part payment must be more than £0 and less than the price."}; }
+  else if(kind!=="unpaid") return {ok:false,err:"Unknown completion."};
+  const seqn=Math.max(0,...(j.hist||[]).map(h=>h.seqn||0))+1;
+  const e={id:"h"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),d:date,t:"clean",a:a,p:p,n:kind==="paid"?"Paid":kind==="part"?"Part paid":"Not paid"};
+  if(!applyCleanEntry(j,e,seqn)) return {ok:false,err:"A clean is already recorded on that date."};
+  return {ok:true};
+}
+/* move the next visit. keep=true keeps the rhythm, false shifts the schedule. Past days are refused. */
+function moveVisit(j,date,target,keep,today){
+  const t=today||TODAY();
+  if(!j||j.next!==date) return {ok:false,err:"Only the next visit of a job can be moved."};
+  if(!/^\d{4}-\d\d-\d\d$/.test(target||"")) return {ok:false,err:"Pick a date."};
+  if(target<t) return {ok:false,err:"Visits cannot be moved into the past."};
+  if(target===date) return {ok:false,err:""};
+  applyMove(j,target,!!keep);
+  return {ok:true};
+}
+function backupProblem(v){
+  if(!v||typeof v!=="object"||!Array.isArray(v.jobs)) return "That file isn't a Gleam backup.";
+  if(!v.jobs.length) return "That backup has no customers in it.";
+  for(const j of v.jobs){ if(!j||typeof j!=="object"||j.id==null||(j.hist!=null&&!Array.isArray(j.hist))) return "That backup looks damaged."; }
+  return "";
+}
+/* merge an imported backup into local data. Both sets of changes are kept; a job whose next date differs
+   is flagged (_clash) instead of being resolved. History entries are joined by id. */
+function mergeBackup(local,inc){
+  const out={added:0,flagged:0,hist:0}, by={};
+  local.jobs.forEach(j=>by[j.id]=j);
+  for(const ij of inc.jobs){
+    const lj=by[ij.id];
+    if(!lj){ const c=JSON.parse(JSON.stringify(ij)); local.jobs.push(c); by[c.id]=c; out.added++; continue; }
+    lj.hist=lj.hist||[];
+    const have=new Set(lj.hist.map(h=>h.id));
+    for(const h of ij.hist||[]) if(!have.has(h.id)){ lj.hist.push(JSON.parse(JSON.stringify(h))); out.hist++; }
+    if(ij.next!==lj.next){ lj._clash="Other copy has the next visit on "+(ij.next||"no date")+". Yours is kept."; out.flagged++; }
+    recalcBal(lj);
+  }
+  return out;
+}
+/*PURE-END*/
+
+/* ---------- state ---------- */
+const KEY="gleam-planner-v2";
+let S={jobs:[],settings:{}}, weeksShown=12, UNDO=[];
+const cap=()=>+(S.settings&&S.settings.planCap)||6;
+function load(){
+  try{ const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v&&!backupProblem(v)){ S=v; } }catch(_){}
+  S.settings=S.settings||{};
+  try{ const w=+localStorage.getItem(KEY+"-weeks"); if(w>=12&&w<=104) weeksShown=w; }catch(_){}
+}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); localStorage.setItem(KEY+"-weeks",String(weeksShown)); }catch(_){ toast("Could not save in this browser."); } }
+function snap(){ UNDO.push(JSON.stringify(S.jobs)); if(UNDO.length>10) UNDO.shift(); }
+function undo(){ if(!UNDO.length) return; S.jobs=JSON.parse(UNDO.pop()); save(); render(); toast("Undone."); }
+const $=id=>document.getElementById(id);
+let toastT;
+function toast(m){ if(!m) return; const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("on"),3200); }
+const jobById=id=>S.jobs.find(j=>j.id===id);
+const DN=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+function uk(s){ const d=dt(s); return DN[(d.getDay()+6)%7]+" "+d.getDate()+" "+d.toLocaleString("en-GB",{month:"short"}); }
+
+/* ---------- render ---------- */
+function render(){
+  const today=TODAY(), start=weekStart(today), end=addD(start,weeksShown*7-1);
+  const act=S.jobs.filter(j=>j.status==="active");
+  const vis=visitsByDay(act,addD(start,-28),end,today);
+  // past cleans, for context
+  const doneBy={};
+  for(const j of act) for(const h of j.hist||[]) if(h.t==="clean"&&h.d>=start&&h.d<today) (doneBy[h.d]=doneBy[h.d]||[]).push({j,h});
+  // dashboard money, in full
+  const owed=S.jobs.reduce((s,j)=>s+Math.max(0,+j.bal||0),0);
+  let weekVal=0,weekHrs=0;
+  for(let i=0;i<7;i++){ const d=addD(start,i); (vis[d]||[]).forEach(v=>{ const j=jobById(v.id); if(j){ weekVal+=+j.price||0; } }); weekHrs+=hoursOn(act,vis[d]); }
+  const late=act.filter(j=>j.next&&j.next<today).length, clashes=S.jobs.filter(j=>j._clash).length;
+  $("stats").innerHTML=
+    `<div class="stat"><span>Owed to you</span><b>${fmtMoney(owed)}</b></div>`+
+    `<div class="stat"><span>This week's work</span><b>${fmtMoney(weekVal)}</b></div>`+
+    `<div class="stat"><span>This week's hours</span><b>${fmtHours(weekHrs)}</b></div>`+
+    `<div class="stat"><span>Overdue</span><b>${late}</b></div>`+
+    (clashes?`<div class="stat"><span>Clashes</span><b style="color:var(--error)">${clashes}</b></div>`:"");
+  if(!S.jobs.length){
+    $("weeks").innerHTML=`<div class="empty"><h2 style="margin:0 0 6px;color:var(--heading)">No customers yet</h2><p>Import a Gleam backup to plan your weeks. Export one from Gleam 2 under Data and backup.</p><button class="pri" id="imp2">Import backup</button></div>`;
+    $("imp2").onclick=()=>$("file").click();
+  }else{
+    let h="";
+    for(let w=0;w<weeksShown;w++){
+      const ws=addD(start,w*7); let wv=0,wh=0,html="";
+      for(let i=0;i<7;i++){
+        const d=addD(ws,i), list=(vis[d]||[]), hrs=hoursOn(act,list), over=hrs>cap();
+        wh+=hrs; list.forEach(v=>{ const j=jobById(v.id); if(j) wv+=+j.price||0; });
+        const chips=(doneBy[d]||[]).map(x=>`<div class="chip done"><b>${esc(x.j.name)}</b><small>${esc(x.h.n||"Done")}</small></div>`).join("")+
+          list.map(v=>{ const j=jobById(v.id); if(!j) return "";
+            const cls=["chip",v.first?"":"proj",v.first&&d<today?"late":"",j._clash?"clash":""].join(" ");
+            return `<button type="button" class="${cls}" data-job="${esc(j.id)}" data-vdate="${d}" data-first="${v.first?1:0}"><b>${j._clash?'<span class="flag">! </span>':""}${esc(j.name)}</b><small>${jobMins(j)} min · ${fmtMoney(j.price)}</small></button>`; }).join("");
+        html+=`<div class="day ${d<today?"past":""} ${d===today?"today":""} ${over?"over":""}" data-date="${d}"><div class="dh"><b>${DN[i]} ${dt(d).getDate()}</b><span class="hrs">${hrs?fmtHours(hrs):""}${over?" over":""}</span></div><div class="cap"><i style="width:${Math.min(100,hrs/cap()*100)}%"></i></div>${chips}</div>`;
+      }
+      h+=`<section class="week wk ${w===0?"cur":""}"><div class="wh"><b>${uk(ws)} to ${uk(addD(ws,6))}</b><span>${fmtHours(wh)} · ${fmtMoney(wv)}</span></div><div class="days">${html}</div></section>`;
+    }
+    $("weeks").innerHTML=h;
+  }
+  $("undo").disabled=!UNDO.length; $("undo").textContent=UNDO.length?"Undo ("+UNDO.length+")":"Undo";
+  $("less").disabled=weeksShown<=12; $("cap").value=cap();
+}
+
+/* ---------- sheets ---------- */
+function closeLayer(){ $("layer").innerHTML=""; }
+function openLayer(html){ $("layer").innerHTML=`<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; $("scrim").addEventListener("mousedown",e=>{ if(e.target.id==="scrim") closeLayer(); }); }
+function openVisit(id,date){
+  const j=jobById(id); if(!j) return;
+  const today=TODAY(), first=j.next===date, canDo=first&&date<=today;
+  const why=!first?"This is a later repeat. Move or complete the next visit first.":date>today?"A future visit cannot be completed yet.":"";
+  openLayer(`<h2>${esc(j.name)}</h2><p>${esc(j.addr||"")} ${esc(j.pc||"")}<br>${uk(date)} · ${jobMins(j)} min · ${fmtMoney(j.price)} · balance ${fmtMoney(j.bal)}</p>
+  ${j._clash?`<div class="note err">${esc(j._clash)} <button id="clr" style="min-height:32px;margin-left:6px">Dismiss flag</button></div>`:""}
+  <div class="sec"><h3>Complete</h3>${why?`<div class="note">${why}</div>`:""}
+  <div class="row"><button class="pri" id="cpaid" ${canDo?"":"disabled"}>Paid</button><button id="cpart" ${canDo?"":"disabled"}>Part paid</button><button id="cunp" ${canDo?"":"disabled"}>Not paid</button></div>
+  <div class="row" id="partrow" hidden><input id="partamt" inputmode="decimal" placeholder="Amount taken, e.g. 12,50"><button class="pri" id="partok">Save part payment</button></div></div>
+  <div class="sec"><h3>Move</h3><div class="row"><input id="mdate" type="date" min="${today}" value="${date>=today?date:today}" ${first?"":"disabled"}><button id="mgo" ${first?"":"disabled"}>Move…</button></div></div>
+  <div class="row"><button id="shut">Close</button></div><div id="err"></div>`);
+  const doit=(kind,part)=>{ snap(); const r=completeVisit(j,date,kind,part); if(!r.ok){ UNDO.pop(); $("err").innerHTML=`<div class="note err">${esc(r.err)}</div>`; return; } save(); closeLayer(); render(); toast(j.name+": "+(kind==="paid"?"paid":kind==="part"?"part paid":"not paid")+". Next "+(j.next?uk(j.next):"on request")+"."); };
+  $("shut").onclick=closeLayer;
+  $("cpaid").onclick=()=>doit("paid"); $("cunp").onclick=()=>doit("unpaid");
+  $("cpart").onclick=()=>{ $("partrow").hidden=false; $("partamt").focus(); };
+  $("partok").onclick=()=>doit("part",$("partamt").value);
+  $("mgo").onclick=()=>askMove(id,date,$("mdate").value);
+  if($("clr")) $("clr").onclick=()=>{ snap(); delete j._clash; save(); closeLayer(); render(); };
+}
+/* after a drop or a date pick: repeating jobs ask keep rhythm or shift; one-offs just move */
+function askMove(id,date,target){
+  const j=jobById(id); if(!j) return;
+  const bad=moveVisit(JSON.parse(JSON.stringify(j)),date,target,true);
+  if(!bad.ok){ toast(bad.err); return; }
+  if(!(j.weeks>0)){ doMove(id,date,target,false); return; }
+  openLayer(`<h2>Move ${esc(j.name)}</h2><p>${uk(date)} to ${uk(target)}. Repeats every ${j.weeks} weeks.</p>
+  <div class="row"><button class="pri" id="mk">Keep rhythm<br><small>Only this visit moves. Next one stays on the old pattern.</small></button><button id="ms">Shift schedule<br><small>Every later visit moves with it.</small></button></div>
+  <div class="row"><button id="mc">Cancel</button></div>`);
+  $("mk").onclick=()=>doMove(id,date,target,true); $("ms").onclick=()=>doMove(id,date,target,false); $("mc").onclick=closeLayer;
+}
+function doMove(id,date,target,keep){
+  const j=jobById(id); snap();
+  const r=moveVisit(j,date,target,keep); if(!r.ok){ UNDO.pop(); toast(r.err); return; }
+  save(); closeLayer(); render();
+  const hrs=hoursOn(S.jobs.filter(x=>x.status==="active"),(visitsByDay(S.jobs.filter(x=>x.status==="active"),target,target,TODAY())[target]||[]));
+  toast(j.name+" moved to "+uk(target)+(hrs>cap()?". That day is over your limit ("+fmtHours(hrs)+")":"."));
+}
+
+/* ---------- drag: press and hold 170 ms on touch, plain drag with a mouse ---------- */
+const HOLD=170, MOVE_PX=7;
+let drag=null;
+function dayAt(x,y){ const e=document.elementFromPoint(x,y); return e&&e.closest?e.closest(".day"):null; }
+function startDrag(chip,x,y){
+  const g=chip.cloneNode(true); g.className="chip ghost"; document.body.appendChild(g);
+  chip.classList.add("lift");
+  drag.ghost=g; drag.active=true; if(navigator.vibrate) try{navigator.vibrate(15);}catch(_){}
+  moveDrag(x,y);
+}
+function moveDrag(x,y){
+  if(!drag||!drag.active) return;
+  drag.ghost.style.transform=`translate(${x-85}px,${y-20}px)`;
+  const d=dayAt(x,y);
+  document.querySelectorAll(".day.drop").forEach(n=>{ if(n!==d) n.classList.remove("drop"); });
+  if(d) d.classList.add("drop");
+  const edge=70; if(y<edge+60) window.scrollBy(0,-12); else if(y>innerHeight-edge) window.scrollBy(0,12);
+}
+function endDrag(x,y,cancel){
+  if(!drag) return; const dr=drag; drag=null; clearTimeout(dr.timer);
+  if(!dr.active) return;
+  const d=cancel?null:dayAt(x,y);
+  dr.ghost.remove(); dr.chip.classList.remove("lift");
+  document.querySelectorAll(".day.drop").forEach(n=>n.classList.remove("drop"));
+  dr.moved=true; lastDragEnd=Date.now();
+  if(d&&d.dataset.date!==dr.date) askMove(dr.id,dr.date,d.dataset.date);
+}
+let lastDragEnd=0;
+function bindChip(root){
+  root.addEventListener("touchstart",e=>{
+    const chip=e.target.closest(".chip[data-job]"); if(!chip||chip.dataset.first!=="1"||e.touches.length!==1) return;
+    const t=e.touches[0];
+    drag={chip,id:chip.dataset.job,date:chip.dataset.vdate,x0:t.clientX,y0:t.clientY,active:false,touch:true};
+    drag.timer=setTimeout(()=>{ if(drag&&!drag.active) startDrag(chip,drag.x0,drag.y0); },HOLD);
+  },{passive:true});
+  root.addEventListener("touchmove",e=>{
+    if(!drag||!drag.touch) return; const t=e.touches[0];
+    if(drag.active){ e.preventDefault(); moveDrag(t.clientX,t.clientY); drag.lx=t.clientX; drag.ly=t.clientY; }
+    else if(Math.hypot(t.clientX-drag.x0,t.clientY-drag.y0)>MOVE_PX){ clearTimeout(drag.timer); drag=null; }   // user is scrolling
+  },{passive:false});
+  const fin=(e,c)=>{ if(!drag||!drag.touch) return; const t=e.changedTouches[0]; if(drag.active) e.preventDefault(); endDrag(t?t.clientX:drag.lx,t?t.clientY:drag.ly,c); drag=null; };
+  root.addEventListener("touchend",e=>fin(e,false)); root.addEventListener("touchcancel",e=>fin(e,true));
+  root.addEventListener("contextmenu",e=>{ if(e.target.closest(".chip")) e.preventDefault(); });
+  root.addEventListener("mousedown",e=>{
+    if(e.button!==0||Date.now()-lastTouch<600) return;
+    const chip=e.target.closest(".chip[data-job]"); if(!chip||chip.dataset.first!=="1") return;
+    drag={chip,id:chip.dataset.job,date:chip.dataset.vdate,x0:e.clientX,y0:e.clientY,active:false,touch:false}; e.preventDefault();
+  });
+  window.addEventListener("mousemove",e=>{ if(!drag||drag.touch) return;
+    if(!drag.active&&Math.hypot(e.clientX-drag.x0,e.clientY-drag.y0)>MOVE_PX) startDrag(drag.chip,e.clientX,e.clientY);
+    else moveDrag(e.clientX,e.clientY); });
+  window.addEventListener("mouseup",e=>{ if(!drag||drag.touch) return; endDrag(e.clientX,e.clientY,false); drag=null; });
+  window.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(drag&&drag.active) endDrag(0,0,true); drag=null; closeLayer(); } });
+  document.addEventListener("touchstart",()=>{ lastTouch=Date.now(); },{passive:true,capture:true});
+}
+let lastTouch=0;
+
+/* ---------- import / export ---------- */
+function exportJSON(){
+  S.meta=S.meta||{}; S.meta.lastExport=new Date().toISOString();
+  const blob=new Blob([JSON.stringify(S,null,1)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="gleam-backup-"+TODAY()+".json";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); save(); toast("Backup exported.");
+}
+function importFile(f){
+  const r=new FileReader();
+  r.onload=()=>{
+    let v; try{ v=JSON.parse(r.result); }catch(_){ toast("That file isn't readable."); return; }
+    const p=backupProblem(v); if(p){ toast(p); return; }
+    const n=v.jobs.length;
+    if(!S.jobs.length){ snap(); S=v; S.settings=S.settings||{}; save(); render(); toast("Loaded "+n+" customers."); return; }
+    openLayer(`<h2>Import backup</h2><p>${n} customers in the file, ${S.jobs.length} here.</p>
+      <div class="row"><button class="pri" id="ibm">Merge<br><small>Keep both. Jobs that differ are flagged.</small></button><button class="bad" id="ibr">Replace everything</button></div><div class="row"><button id="ibc">Cancel</button></div>`);
+    $("ibc").onclick=closeLayer;
+    $("ibm").onclick=()=>{ snap(); const o=mergeBackup(S,v); save(); closeLayer(); render(); toast("Merged: "+o.added+" new, "+o.hist+" history entries, "+o.flagged+" flagged."); };
+    $("ibr").onclick=()=>{ snap(); const keep=S.settings; S=v; S.settings=Object.assign({},v.settings,keep.planCap?{planCap:keep.planCap}:{}); save(); closeLayer(); render(); toast("Replaced with the backup."); };
+  };
+  r.readAsText(f);
+}
+
+/* ---------- boot ---------- */
+load(); bindChip($("weeks"));
+$("weeks").addEventListener("click",e=>{
+  const chip=e.target.closest(".chip[data-job]"); if(!chip||Date.now()-lastDragEnd<400) return;
+  openVisit(chip.dataset.job,chip.dataset.vdate);
+});
+$("undo").onclick=undo;
+$("exp").onclick=exportJSON;
+$("imp").onclick=()=>$("file").click();
+$("file").onchange=e=>{ const f=e.target.files[0]; if(f) importFile(f); e.target.value=""; };
+$("more").onclick=()=>{ weeksShown=Math.min(104,weeksShown+4); save(); render(); };
+$("less").onclick=()=>{ weeksShown=Math.max(12,weeksShown-4); save(); render(); };
+$("cap").onchange=e=>{ const v=+e.target.value; if(v>0){ S.settings.planCap=v; save(); render(); } };
+render();
+</script>
+</body>
+</html>
