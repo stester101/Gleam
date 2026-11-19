@@ -687,6 +687,10 @@ body.kb-open nav,body.kb-open .fab{display:none}
 .switchrow input[type=checkbox]:focus-visible{outline:2px solid var(--aqua);outline-offset:3px}
 .switchrow{min-height:56px}
 .titlerow .viewseg{flex:0 0 auto;margin:0}.titlerow .viewseg button{flex:0 0 auto;padding:8px 12px}
+/* Bigger buttons (Helpers & prompts): larger touch targets for ladder and gloved work */
+body.bigbtn .acts .btn{min-height:48px;font-size:16px!important;padding:12px 16px!important}
+body.bigbtn .card .acts .btn{min-height:52px;min-width:88px;font-size:16px!important;padding:12px 14px!important}
+body.bigbtn .card .r1l,body.bigbtn .card .grow{min-width:0}
 </style>
 </head>
 <body>
@@ -1039,7 +1043,7 @@ const DEFAULTS={
     mins:30, freqs:[4,5,8,0], outdoor:false, compactToday:false, compactCustomers:false,
     swipeTabs:true, swipeDays:true, swipeFollow:true, swipeJobs:true, keepScroll:true, buzz:true,
     cleanAnim:true,
-    askTwice:true, lateBanner:true, holdHint:true, payChips:true, rainRemember:false, longUndo:false,
+    askTwice:true, lateBanner:true, holdHint:true, payChips:true, rainRemember:false, longUndo:false, bigButtons:false,
     tpl:{
       onway:"Hi {name}, Ant here from {biz}. On my way to {address} now — should be with you shortly.",
       done:"Hi {name}, windows done at {address} today. That's {price} please. {pay} Thanks!",
@@ -1051,7 +1055,7 @@ const DEFAULTS={
 };
 const FEEL_KEYS=["swipeTabs","swipeDays","swipeFollow","swipeJobs","keepScroll","buzz","cleanAnim"];
 /* optional extras: on/off switches in Settings → Helpers & prompts */
-const EXTRA_KEYS=["askTwice","lateBanner","holdHint","payChips","rainRemember","longUndo"];
+const EXTRA_KEYS=["askTwice","lateBanner","holdHint","payChips","rainRemember","longUndo","bigButtons"];
 /* a switch's current value, falling back to its default for older saves */
 const opt=k=>{ const v=(typeof S!=="undefined"&&S&&S.settings)?S.settings[k]:undefined; return typeof v==="boolean"?v:!!DEFAULTS.settings[k]; };
 const reducedMotion=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(_){ return false; } };
@@ -3333,7 +3337,8 @@ const EXTRA_ROWS=[
   ["lateBanner","Left-behind reminder on Today","The bar for jobs missed on earlier days. They still show in Schedule"],
   ["holdHint","“Hold to pick several” tip","The small hint line above Today, Schedule and Customers lists"],
   ["rainRemember","Remember my rain day choice","Rain day opens with what you picked last time"],
-  ["longUndo","More time to undo","Keeps the Undo button up for 9 seconds instead of 5"]];
+  ["longUndo","More time to undo","Keeps the Undo button up for 9 seconds instead of 5"],
+  ["bigButtons","Bigger buttons","Complete, Skip, Paid and Not paid are larger, easier to hit on a ladder or in gloves"]];
 const optCount=rows=>rows.filter(r=>opt(r[0])).length;
 function optGroupHTML(id,title,rows){
   return `<details class="settingsgroup" id="${id}">
@@ -3346,6 +3351,7 @@ function optGroupHTML(id,title,rows){
 }
 function setOpt(k,on){
   S.settings[k]=!!on; save();
+  if(k==="bigButtons") document.body.classList.toggle("bigbtn",!!on);
   const b=$("extrasSum"); if(b) b.textContent=optCount(EXTRA_ROWS)+" of "+EXTRA_ROWS.length+" on";
   if(k==="rainRemember"&&!on) delete S.settings.rainLast;
   if(["lateBanner","holdHint"].includes(k)) render();
@@ -3567,6 +3573,7 @@ async function applyRestore(){
   UNDO=null; SEL={ctx:null,ids:[]};
   save(); closeSheet(); render();
   document.body.classList.toggle("outdoor",!!S.settings.outdoor);
+  document.body.classList.toggle("bigbtn",!!S.settings.bigButtons);
   toast("Restored "+pl(S.jobs.length,"job")+(p.label?" from "+p.label:""),"Undo",undoRestore,9000);
   return true;
 }
@@ -3579,6 +3586,7 @@ async function undoRestore(){
   UNDO=null; SEL={ctx:null,ids:[]};
   save(); closeSheet(); render();
   document.body.classList.toggle("outdoor",!!S.settings.outdoor);
+  document.body.classList.toggle("bigbtn",!!S.settings.bigButtons);
   toast("Restore undone — back to "+pl(S.jobs.length,"job"));
 }
 function importJSON(input){
@@ -3943,6 +3951,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden) onNative
   S.jobs.forEach(j=>j.hist.forEach(h=>{ const n=+h.seqn||0; if(n<1e12&&n>=HSEQ) HSEQ=n+1; }));
   recalcAll();
   document.body.classList.toggle("outdoor",!!S.settings.outdoor);
+  document.body.classList.toggle("bigbtn",!!S.settings.bigButtons);
   $("sunBtn").textContent=S.settings.outdoor?"🌙":"☀";
   $("bizname").textContent=S.settings.owner;
   const copies=freshInstall?recoveryCopies():[];
